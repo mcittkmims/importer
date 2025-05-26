@@ -2,6 +2,7 @@ package com.internship.importer.tasks;
 
 import com.internship.importer.config.ImportAppConfig;
 import com.internship.importer.service.CompanyService;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,15 +12,13 @@ import java.io.IOException;
 import java.time.Instant;
 
 @Component
+@AllArgsConstructor
 public class CompanyDataImportTask {
 
     private static final Logger log = LoggerFactory.getLogger(CompanyDataImportTask.class);
     private CompanyService service;
     private ImportAppConfig config;
 
-    public CompanyDataImportTask(CompanyService service) {
-        this.service = service;
-    }
 
     @Scheduled(fixedRateString = "${cleaner.fixedRate.in.milliseconds:86400000}")
     public void insertTask() throws IOException {
