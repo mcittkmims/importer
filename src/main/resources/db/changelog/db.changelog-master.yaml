@@ -1,16 +1,23 @@
 databaseChangeLog:
   - changeSet:
       id: 1
-      author: java-test-junior
+      author: importer
   - include:
       file: migration/V1__migrate_table_industry.sql
       relativeToChangelogFile: true
 
   - changeSet:
       id: 2
-      author: java-test-junior
+      author: importer
   - include:
       file: migration/V2__migrate_table_company.sql
+      relativeToChangelogFile: true
+
+  - changeSet:
+      id: 3
+      author: importer
+  - include:
+      file: migration/V3__migrate_table_company_industry.sql
       relativeToChangelogFile: true
 
 

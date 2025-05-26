@@ -7,7 +7,7 @@
         <package name="com.internship.importer"/>
     </typeAliases>
     <mappers>
-<!--        <mapper resource="com/java/test/junior/mapper/loading/LoadingMapper.xml"/>-->
+        <mapper resource="mapper/CompanyMapper.xml"/>
 <!--        <mapper resource="com/java/test/junior/mapper/product/ProductMapper.xml"/>-->
 <!--        <mapper resource="com/java/test/junior/mapper/user/UserMapper.xml"/>-->
     </mappers>

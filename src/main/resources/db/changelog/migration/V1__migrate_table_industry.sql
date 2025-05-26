@@ -1,7 +1,6 @@
-CREATE TABLE IF NOT EXISTS users
-(
+CREATE TABLE IF NOT EXISTS industry (
     id BIGSERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL
+    code VARCHAR(10) UNIQUE NOT NULL,
+    name VARCHAR(30),
+    description VARCHAR(255)
 );
