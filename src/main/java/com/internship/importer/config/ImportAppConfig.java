@@ -23,6 +23,9 @@ public class ImportAppConfig {
     @Value("${importapp.download.location:downloads}")
     private String downloadLocation;
 
+    @Value("${importapp.scheduler.cron}")
+    private String schedulerCron;
+
     @Value("${importapp.company.corporate.number:corporate_number}")
     private String companyCorporateNumberField;
     @Value("${importapp.company.name:name}")

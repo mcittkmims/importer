@@ -9,5 +9,4 @@ import java.util.function.Consumer;
 
 public interface CompanyDataTransformer {
     void processLargeFile(InputStream inputStream, Consumer<CompanyDTO> consumer) throws IOException;
-
 }
