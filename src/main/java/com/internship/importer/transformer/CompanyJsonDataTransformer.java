@@ -45,9 +45,9 @@ public class CompanyJsonDataTransformer implements CompanyDataTransformer {
 
             JsonParserHandler handler = fieldHandlerMap.get(fieldName);
 
-            if(handler != null){
+            if (handler != null) {
                 handler.handle(jsonParser);
-            }else{
+            } else {
                 jsonParser.skipChildren();
             }
         }
@@ -55,7 +55,7 @@ public class CompanyJsonDataTransformer implements CompanyDataTransformer {
     }
 
 
-    private Map<String, JsonParserHandler> getFieldHandlerMap(CompanyDTO companyDTO){
+    private Map<String, JsonParserHandler> getFieldHandlerMap(CompanyDTO companyDTO) {
         Map<String, JsonParserHandler> map = new HashMap<>();
 
         map.put(config.getCompanyCorporateNumberField(), parser -> companyDTO.setCorporateNumber(parser.getText()));
@@ -67,17 +67,20 @@ public class CompanyJsonDataTransformer implements CompanyDataTransformer {
         map.put(config.getCompanyRepresentativeNameField(), parser -> companyDTO.setRepresentativeName(parser.getText()));
         map.put(config.getCompanyEmployeeCountField(), parser -> companyDTO.setEmployeeCount(Integer.parseInt(parser.getText())));
         map.put(config.getCompanyEstablishmentDateField(), parser -> companyDTO.setEstablishmentDate(LocalDate.parse(parser.getText())));
-        map.put(config.getCompanyIndustriesField(), parser -> {
-            List<String> industries = new ArrayList<>();
-            if (parser.currentToken() == JsonToken.START_ARRAY) {
-                while (parser.nextToken() != JsonToken.END_ARRAY) {
-                    industries.add(parser.getText());
-                }
-            } else {
+        map.put(config.getCompanyIndustriesField(), parser -> companyDTO.setIndustries(this.parseIndustries(parser)));
+        return map;
+    }
+
+    
+    private List<String> parseIndustries(JsonParser parser) throws IOException {
+        List<String> industries = new ArrayList<>();
+        if (parser.currentToken() == JsonToken.START_ARRAY) {
+            while (parser.nextToken() != JsonToken.END_ARRAY) {
                 industries.add(parser.getText());
             }
-            companyDTO.setIndustries(industries);
-        });
-        return map;
+        } else {
+            industries.add(parser.getText());
+        }
+        return industries;
     }
 }

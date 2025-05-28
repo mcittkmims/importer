@@ -3,10 +3,8 @@ package com.internship.importer.tasks;
 import com.internship.importer.config.ImportAppConfig;
 import com.internship.importer.service.CompanyService;
 import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
@@ -24,12 +22,12 @@ public class CompanyDataImportTask implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        taskRegistrar.addCronTask(this::insertTask, config.getSchedulerCron());
+        taskRegistrar.addCronTask(this::importData, config.getSchedulerCron());
     }
 
 
-    public void insertTask(){
-        log.info("Started importing company data @ {}",Instant.now());
+    public void importData() {
+        log.info("Started importing company data @ {}", Instant.now());
         try {
             this.service.importCompanyData(config.getDownloadUrl(), config.getDownloadLocation());
         } catch (IOException e) {

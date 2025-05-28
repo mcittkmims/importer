@@ -1,6 +1,5 @@
 package com.internship.importer.transformer;
 
-import com.internship.importer.model.Company;
 import com.internship.importer.model.CompanyDTO;
 
 import java.io.IOException;
