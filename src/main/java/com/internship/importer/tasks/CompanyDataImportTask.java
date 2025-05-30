@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.Instant;
 
 @Component
@@ -28,10 +27,7 @@ public class CompanyDataImportTask implements SchedulingConfigurer {
 
     public void importData() {
         log.info("Started importing company data @ {}", Instant.now());
-        try {
-            this.service.importCompanyData(config.getDownloadUrl(), config.getDownloadLocation());
-        } catch (IOException e) {
-            log.error("Import failed", e);
-        }
+        this.service.importCompanyData(config.getDownloadUrl());
+
     }
 }
