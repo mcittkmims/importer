@@ -5,10 +5,12 @@ import com.internship.importer.service.CompanyService;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.Instant;
 
 @Component
@@ -28,6 +30,15 @@ public class CompanyDataImportTask implements SchedulingConfigurer {
     public void importData() {
         log.info("Started importing company data @ {}", Instant.now());
         this.service.importCompanyData(config.getDownloadUrl());
+        try {
+            service.exportCompanyData("http://localhost:8080/upload");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    @Scheduled(fixedDelay = 10000)
+    public void exportData() throws IOException {
+        service.exportCompanyData("http://localhost:8080/upload");
     }
 }
