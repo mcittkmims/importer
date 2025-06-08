@@ -1,7 +1,7 @@
 package com.internship.importer.service;
 
-import com.internship.importer.config.ImportAppConfig;
 import com.internship.importer.exception.UrlConnectionException;
+import com.internship.importer.exception.ZipExtractionException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,26 +18,24 @@ import java.util.zip.ZipInputStream;
 @AllArgsConstructor
 public class ZipJsonDownloadService implements JsonDownloadService {
 
-    private ImportAppConfig config;
-
     @Override
-    public void downloadFile(String urlString, Consumer<InputStream> consumer){
-        HttpURLConnection connection = createConnection(urlString);
+    public void downloadFile(String urlString, String httpMethod, Consumer<InputStream> consumer){
+        HttpURLConnection connection = createConnection(urlString, httpMethod);
         try (InputStream inputStream = connection.getInputStream();
              ZipInputStream zipIn = new ZipInputStream(new BufferedInputStream(inputStream))) {
 
             extractZipEntries(zipIn, consumer);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to process the downloaded content: " + e);
+            throw new ZipExtractionException("Failed to process the downloaded ZIP content from: " + urlString, e);
         } finally {
             connection.disconnect();
         }
     }
 
-    private HttpURLConnection createConnection(String urlString){
+    private HttpURLConnection createConnection(String urlString, String httpMethod){
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(urlString).openConnection();
-            connection.setRequestMethod(config.getHttpMethod());
+            connection.setRequestMethod(httpMethod);
             connection.setDoOutput(true);
             connection.connect();
             return connection;
@@ -46,16 +44,18 @@ public class ZipJsonDownloadService implements JsonDownloadService {
         }
     }
 
-    private void extractZipEntries(ZipInputStream zipIn, Consumer<InputStream> consumer) throws IOException {
-        ZipEntry entry;
-        while ((entry = zipIn.getNextEntry()) != null) {
-            if (!entry.isDirectory()) {
-               consumer.accept(zipIn);
+    private void extractZipEntries(ZipInputStream zipIn, Consumer<InputStream> consumer) {
+        try {
+            ZipEntry entry;
+            while ((entry = zipIn.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                   consumer.accept(zipIn);
+                }
+                zipIn.closeEntry();
             }
-            zipIn.closeEntry();
+        } catch (IOException e) {
+            throw new ZipExtractionException("Failed to extract ZIP entries", e);
         }
     }
-
-
 }
 

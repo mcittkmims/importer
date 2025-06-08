@@ -1,11 +1,12 @@
 package com.internship.importer.loader;
 
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.internship.importer.exception.DataCopyException;
+import com.internship.importer.exception.JsonParsingException;
 import lombok.AllArgsConstructor;
 import org.postgresql.PGConnection;
 import org.springframework.stereotype.Component;
@@ -32,11 +33,12 @@ public class JsonDataLoader implements DataLoader {
             writerThread.start();
 
             copyToDatabase(connection, in);
-        } catch (SQLException | IOException e) {
-            throw new RuntimeException("Failed to load data into database", e);
+        } catch (SQLException e) {
+            throw new DataCopyException("Failed to establish database connection for data loading", e);
+        } catch (IOException e) {
+            throw new DataCopyException("Failed to load data into database", e);
         }
     }
-
 
     private void copyToDatabase(Connection connection, InputStream in) {
         try (in; Statement stmt = connection.createStatement()) {
@@ -45,8 +47,10 @@ public class JsonDataLoader implements DataLoader {
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
             pgConnection.getCopyAPI().copyIn("COPY company_staging (raw_json) FROM STDIN", in);
 
-        } catch (SQLException | IOException e) {
-            throw new RuntimeException("Error during COPY operation", e);
+        } catch (SQLException e) {
+            throw new DataCopyException("Error during database COPY operation", e);
+        } catch (IOException e) {
+            throw new DataCopyException("Error during data stream processing", e);
         }
     }
 
@@ -55,14 +59,13 @@ public class JsonDataLoader implements DataLoader {
             try (OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                 this.convertToNdjsonStream(inputStream, writer);
             } catch (IOException e) {
-                throw new RuntimeException("Error in writer thread", e);
+                throw new JsonParsingException("Error in JSON conversion thread", e);
             }
         });
     }
 
-
-
-    private void convertToNdjsonStream(InputStream inputStream, Writer writer) throws IOException {
+    private void convertToNdjsonStream(InputStream inputStream, Writer writer) {
+        try {
             ObjectMapper mapper = new ObjectMapper();
             JsonFactory factory = mapper.getFactory();
             JsonParser parser = factory.createParser(inputStream);
@@ -79,36 +82,44 @@ public class JsonDataLoader implements DataLoader {
                     break;
 
                 default:
-                    throw new IllegalArgumentException("Unsupported JSON format: expected array or NDJSON");
+                    throw new JsonParsingException("Unsupported JSON format: expected array or NDJSON, found: " + token);
             }
 
             writer.flush();
+        } catch (IOException e) {
+            throw new JsonParsingException("Failed to parse JSON data", e);
         }
+    }
 
+    private void writeArrayAsNdjson(JsonParser parser, ObjectMapper mapper, Writer writer) {
+        try {
+            while (parser.nextToken() == JsonToken.START_OBJECT) {
+                JsonNode node = mapper.readTree(parser);
 
+                String jsonLine = mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\");
+                writer.write(jsonLine);
+                writer.write('\n');
+            }
+        } catch (IOException e) {
+            throw new JsonParsingException("Failed to write JSON array as NDJSON", e);
+        }
+    }
 
-    private void writeArrayAsNdjson(JsonParser parser, ObjectMapper mapper, Writer writer) throws IOException {
-        while (parser.nextToken() == JsonToken.START_OBJECT) {
+    private void writeNdjsonStream(JsonParser parser, ObjectMapper mapper, Writer writer) {
+        try {
             JsonNode node = mapper.readTree(parser);
 
-            String jsonLine = mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\");
-            writer.write(jsonLine);
-            writer.write('\n');
-        }
-    }
-
-    private void writeNdjsonStream(JsonParser parser, ObjectMapper mapper, Writer writer) throws IOException {
-        JsonNode node = mapper.readTree(parser);
-
-        writer.write(mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\"));
-        writer.write('\n');
-
-        while (parser.nextToken() == JsonToken.START_OBJECT) {
-            node = mapper.readTree(parser);
             writer.write(mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\"));
             writer.write('\n');
+
+            while (parser.nextToken() == JsonToken.START_OBJECT) {
+                node = mapper.readTree(parser);
+                writer.write(mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\"));
+                writer.write('\n');
+            }
+        } catch (IOException e) {
+            throw new JsonParsingException("Failed to write NDJSON stream", e);
         }
     }
-
 }
 

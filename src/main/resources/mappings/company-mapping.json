@@ -1,0 +1,8 @@
+{
+  "companyName": "$.name",
+  "companyNumber": "$.corporate_number", 
+  "companyStatus": "$.status",
+  "companyLocation": "$.location",
+  "dateOfCreation": "$.date_of_establishment",
+  "industries": "$.business_items"
+}

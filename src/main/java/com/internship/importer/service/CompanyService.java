@@ -1,10 +1,13 @@
 package com.internship.importer.service;
 
-import com.internship.importer.config.ImportAppConfig;
+import com.internship.importer.exception.DataExportException;
+import com.internship.importer.exception.DataImportException;
+import com.internship.importer.exception.DatabaseException;
+import com.internship.importer.exception.FileResourceException;
+import com.internship.importer.exception.HttpRequestException;
 import com.internship.importer.helper.IteratorInputStream;
 import com.internship.importer.loader.DataLoader;
 import com.internship.importer.mapper.CompanyMapper;
-import lombok.AllArgsConstructor;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -20,66 +23,127 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
+import org.springframework.core.io.ResourceLoader;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Iterator;
 
 
 @Service
-@AllArgsConstructor
 public class CompanyService {
-    private final CompanyMapper companyMapper;
-    private JsonDownloadService downloadService;
     private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
-    private ImportAppConfig config;
-    private DataLoader dataLoader;
     private SqlSessionFactory sqlSessionFactory;
+    private JsonDownloadService downloadService;
+    private DataLoader dataLoader;
+    private ResourceLoader resourceLoader;
 
-    public void importCompanyData(String url){
-        downloadService.downloadFile(url,inputStream -> dataLoader.loadData(inputStream));
+
+    public CompanyService(JsonDownloadService downloadService, DataLoader dataLoader, ResourceLoader resourceLoader, SqlSessionFactory sqlSessionFactory) {
+        this.downloadService = downloadService;
+        this.dataLoader = dataLoader;
+        this.resourceLoader = resourceLoader;
+        this.sqlSessionFactory = sqlSessionFactory;
     }
 
-    public void exportCompanyData(String url) throws IOException {
-        HttpPost post = new HttpPost(url);
+    @Value("${importer.download.http.method:POST}")
+    private String httpMethod;
+    @Value("${importer.download.url}")
+    private String downloadUrl;
+    @Value("${importer.upload.url}")
+    private String uploadUrl;
 
-        String companyMappingJson = "{\n" +
-                "    \"companyName\": \"$.name\",\n" +
-                "    \"companyNumber\": \"$.corporate_number\",\n" +
-                "    \"companyStatus\": \"$.status\",\n" +
-                "    \"companyLocation\": \"$.location\",\n" +
-                "    \"dateOfCreation\": \"$.date_of_establishment\",\n" +
-                "    \"industries\": \"$.business_items\"\n" +
-                "  }";
-        ContentBody companyMappingBody = new StringBody(companyMappingJson, ContentType.APPLICATION_JSON);
+    @Value("${importer.mapping.company.file}")
+    private String companyMappingFile;
 
-        String industryMappingJson = "{\n" +
-                "    \"industryCode\": \"$\"\n" +
-                "  }";
-        ContentBody industryMappingBody = new StringBody(industryMappingJson, ContentType.APPLICATION_JSON);
+    @Value("${importer.mapping.industry.file}")
+    private String industryMappingFile;
 
-        try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
-            Iterator<String> iterator = sqlSession.getMapper(CompanyMapper.class).getJsonData().iterator();
+    public void importCompanyData() {
+        try {
+            downloadService.downloadFile(downloadUrl, httpMethod, inputStream -> dataLoader.loadData(inputStream));
+        } catch (Exception e) {
+            throw new DataImportException("Failed to import company data from: " + downloadUrl, e);
+        }
+    }
 
-            IteratorInputStream iteratorInputStream = new IteratorInputStream(iterator);
+    public void exportCompanyData() {
+        try {
+            ContentBody companyMappingBody = this.createCompanyMappingBody();
+            ContentBody industryMappingBody = this.createIndustryMappingBody();
 
-            InputStreamBody dataBody = new InputStreamBody(iteratorInputStream, ContentType.APPLICATION_JSON, "data.ndjson");
-
-            HttpEntity entity = MultipartEntityBuilder.create()
-                    .addPart("companyMapping", companyMappingBody)
-                    .addPart("industryMapping", industryMappingBody)
-                    .addPart("data", dataBody)
-                    .build();
-
-            post.setEntity(entity);
-
-            try (CloseableHttpClient httpClient = HttpClients.createDefault();
-                 CloseableHttpResponse response = httpClient.execute(post)) {
-
-                System.out.println(EntityUtils.toString(response.getEntity()));
+            try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+                InputStreamBody dataBody = this.createDataBody(sqlSession);
+                HttpEntity entity = this.createMultipartEntity(companyMappingBody, industryMappingBody, dataBody);
+                this.executeHttpRequest(entity);
             }
+        } catch (IOException e) {
+            throw new DataExportException("Failed to export company data to: " + uploadUrl, e);
         }
     }
 
 
+    private void executeHttpRequest(HttpEntity entity) throws IOException{
+        HttpPost post = new HttpPost(uploadUrl);
+        post.setEntity(entity);
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(post)) {
+            
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                throw new HttpRequestException("HTTP request failed with status: " + statusCode, statusCode);
+            }
+            
+            String responseString = EntityUtils.toString(response.getEntity());
+            log.info("Server response: {}", responseString);
+        } catch (IOException e) {
+            throw new HttpRequestException("Failed to execute HTTP request to: " + uploadUrl, e);
+        }
+    }
+
+    private HttpEntity createMultipartEntity(ContentBody companyMappingBody, ContentBody industryMappingBody, InputStreamBody dataBody) {
+        return MultipartEntityBuilder.create()
+                .addPart("companyMapping", companyMappingBody)
+                .addPart("industryMapping", industryMappingBody)
+                .addPart("data", dataBody)
+                .build();
+    }
+
+    private ContentBody createCompanyMappingBody() throws IOException {
+        try {
+            String companyMappingJson = StreamUtils.copyToString(
+                    resourceLoader.getResource(companyMappingFile).getInputStream(),
+                    StandardCharsets.UTF_8);
+            return new StringBody(companyMappingJson, ContentType.APPLICATION_JSON);
+        } catch (IOException e) {
+            throw new FileResourceException("Failed to load company mapping file: " + companyMappingFile, e);
+        }
+    }
+
+    private ContentBody createIndustryMappingBody() throws IOException {
+        try {
+            String industryMappingJson = StreamUtils.copyToString(
+                    resourceLoader.getResource(industryMappingFile).getInputStream(),
+                    StandardCharsets.UTF_8);
+            return new StringBody(industryMappingJson, ContentType.APPLICATION_JSON);
+        } catch (IOException e) {
+            throw new FileResourceException("Failed to load industry mapping file: " + industryMappingFile, e);
+        }
+    }
+
+    private InputStreamBody createDataBody(SqlSession sqlSession) {
+        Iterator<String> iterator = sqlSession.getMapper(CompanyMapper.class).getJsonData().iterator();
+        IteratorInputStream iteratorInputStream = new IteratorInputStream(iterator);
+        return new InputStreamBody(iteratorInputStream, ContentType.APPLICATION_JSON, "data.ndjson");
+    }
+
+
 }
+
+
+
