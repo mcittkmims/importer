@@ -1,6 +1,6 @@
 {
   "companyName": "$.name",
-  "companyNumber": "$.corporate_number", 
+  "companyNumber": "$.corporate_number[0]",
   "companyStatus": "$.status",
   "companyLocation": "$.location",
   "dateOfCreation": "$.date_of_establishment",

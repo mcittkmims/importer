@@ -33,6 +33,18 @@ public class ScheduledTaskErrorHandler implements ErrorHandler {
             handleHttpRequestError((HttpRequestException) t);
         } else if (t instanceof DataCopyException) {
             handleDataCopyError((DataCopyException) t);
+        } else if (t instanceof DataFetchException) {
+            handleDataFetchError((DataFetchException) t);
+        } else if (t instanceof FolderCreationException) {
+            handleFolderCreationError((FolderCreationException) t);
+        } else if (t instanceof InvalidJobConfigFileException) {
+            handleInvalidJobConfigFileError((InvalidJobConfigFileException) t);
+        } else if (t instanceof JobConfigException) {
+            handleJobConfigError((JobConfigException) t);
+        } else if (t instanceof JobCreationException) {
+            handleJobCreationError((JobCreationException) t);
+        } else if (t instanceof StatusFileException) {
+            handleStatusFileError((StatusFileException) t);
         } else if (t instanceof SQLException) {
             handleSqlError((SQLException) t);
         } else if (t instanceof RuntimeException) {
@@ -80,6 +92,30 @@ public class ScheduledTaskErrorHandler implements ErrorHandler {
     
     private void handleDataCopyError(DataCopyException e) {
         logger.error("Data Copy Operation Failed: {}", e.getMessage(), e);
+    }
+    
+    private void handleDataFetchError(DataFetchException e) {
+        logger.error("Data Fetch Failed: {}", e.getMessage(), e);
+    }
+    
+    private void handleFolderCreationError(FolderCreationException e) {
+        logger.error("Folder Creation Failed: {}", e.getMessage(), e);
+    }
+    
+    private void handleInvalidJobConfigFileError(InvalidJobConfigFileException e) {
+        logger.error("Invalid Job Config File: {}", e.getMessage(), e);
+    }
+    
+    private void handleJobConfigError(JobConfigException e) {
+        logger.error("Job Configuration Error: {}", e.getMessage(), e);
+    }
+    
+    private void handleJobCreationError(JobCreationException e) {
+        logger.error("Job Creation Failed: {}", e.getMessage(), e);
+    }
+    
+    private void handleStatusFileError(StatusFileException e) {
+        logger.error("Status File Operation Failed: {}", e.getMessage(), e);
     }
     
     private void handleSqlError(SQLException e) {
