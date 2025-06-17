@@ -1,12 +1,11 @@
 package com.internship.importer.config;
 
-import com.internship.importer.job.JobLoader;
+import com.internship.importer.core.job.JobLoader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 
 @Configuration
 public class ExecutorConfig {
