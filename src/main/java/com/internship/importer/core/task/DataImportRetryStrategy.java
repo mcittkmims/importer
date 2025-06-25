@@ -25,7 +25,7 @@ public class DataImportRetryStrategy implements TaskRetryStrategy{
             if(!fileCreationTime.isBefore(Instant.now().minusSeconds(expirationSeconds))){
                 return;
             }
-            dataImportTask.setToCompleteStatus();
+            dataImportTask.setToIncompleteStatus();
         }
         for(Task task: tasks){
             task.setToIncompleteStatus();

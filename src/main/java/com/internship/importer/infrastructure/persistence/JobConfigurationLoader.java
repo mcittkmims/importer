@@ -3,6 +3,7 @@ package com.internship.importer.infrastructure.persistence;
 import com.internship.importer.exception.InvalidJobConfigFileException;
 import com.internship.importer.exception.JobConfigException;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,9 @@ public class JobConfigurationLoader {
 
     private static final Pattern JOB_CONFIG_PATTERN = Pattern.compile("^([\\w-]+)\\.config\\.json$");
 
+    @Getter
+    private int currentScannedJobs = 0;
+
     public Map<String, String> loadJobConfigs() {
         File[] configFiles = listJobConfigFiles();
         Map<String, String> jobConfigs = new HashMap<>();
@@ -31,6 +35,7 @@ public class JobConfigurationLoader {
             String content = readFileContent(file.toPath());
             jobConfigs.put(jobName, content);
         }
+        this.currentScannedJobs = jobConfigs.size();
 
         return jobConfigs;
     }

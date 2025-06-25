@@ -20,9 +20,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 @AllArgsConstructor
@@ -31,6 +34,8 @@ public class HttpDataExporter implements DataExporter {
 
     private String uploadUrl;
     private StagingRepository repository;
+    private ExecutorService exportExecutorService;
+    private StagingDataProcessor stagingDataProcessor;
 
     public void sendStagingData(String companyJsonData, String industryJsonData, String tableName) {
         int batchSize = 500;
@@ -38,21 +43,78 @@ public class HttpDataExporter implements DataExporter {
             ContentBody companyMappingBody = this.createCompanyMappingBody(companyJsonData);
             ContentBody industryMappingBody = this.createIndustryMappingBody(industryJsonData);
 
-            while (true) {
-                List<JsonDataRecord> jsonList = repository.getBatchJsonData(tableName, batchSize);
-                if (jsonList.isEmpty()) {
-                    break;
-                }
-                InputStreamBody dataBody = this.createDataBody(jsonList.stream().map(JsonDataRecord::getRawJson));
-                HttpEntity entity = this.createMultipartEntity(companyMappingBody, industryMappingBody, dataBody);
-                this.executeHttpRequest(entity);
-                repository.deleteRowsByIds(tableName,
-                        jsonList.stream().map(JsonDataRecord::getId).collect(Collectors.toList()));
-            }
+            this.processBatchesWithProcessor(batchSize, companyMappingBody, industryMappingBody);
 
         } catch (IOException e) {
             throw new DataExportException("Failed to export company data to: " + uploadUrl, e);
         }
+    }
+
+    private void processBatchesWithProcessor(int batchSize,
+            ContentBody companyMappingBody,
+            ContentBody industryMappingBody) throws IOException {
+        List<Future<Void>> futures = new ArrayList<>();
+        int batchCount = 0;
+
+        while (true) {
+            AdvancedBoolean empty = new AdvancedBoolean();
+
+            stagingDataProcessor.processBatch(repository, batchSize, records -> {
+                if (records.isEmpty()) {
+                    empty.setTrue();
+                } else {
+                    Future<Void> future = submitBatch(records, companyMappingBody, industryMappingBody);
+                    futures.add(future);
+                }
+            });
+
+            if (empty.getCondition()) {
+                break;
+            }
+
+            batchCount++;
+            log.info("Processed batch #{}", batchCount);
+        }
+
+        log.info("Completed processing {} batches", batchCount);
+        waitForCompletion(futures);
+    }
+
+    private Future<Void> submitBatch(List<JsonDataRecord> jsonList,
+            ContentBody companyMappingBody,
+            ContentBody industryMappingBody) {
+
+        return exportExecutorService.submit(() -> {
+            try {
+                sendBatch(jsonList, companyMappingBody, industryMappingBody);
+                return null;
+            } catch (IOException e) {
+                log.error("Failed to send batch: {}", e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void waitForCompletion(List<Future<Void>> futures) {
+        for (Future<Void> future : futures) {
+            try {
+                future.get(30, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.error("Batch execution failed: {}", e.getMessage(), e);
+                futures.forEach(f -> f.cancel(true));
+                throw new DataExportException("Batch processing failed", e);
+            }
+        }
+    }
+
+    private void sendBatch(List<JsonDataRecord> jsonList,
+            ContentBody companyMappingBody,
+            ContentBody industryMappingBody) throws IOException {
+
+        InputStreamBody dataBody = this.createDataBody(jsonList.stream().map(JsonDataRecord::getRawJson));
+        HttpEntity entity = this.createMultipartEntity(companyMappingBody, industryMappingBody, dataBody);
+        this.executeHttpRequest(entity);
+
     }
 
     private void executeHttpRequest(HttpEntity entity) throws IOException {

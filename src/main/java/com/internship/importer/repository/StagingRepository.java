@@ -11,25 +11,27 @@ import java.util.List;
 @AllArgsConstructor
 public class StagingRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final String tableName;
 
-    public List<JsonDataRecord> getBatchJsonData(String tableName, int limit) {
+    public List<JsonDataRecord> getBatchJsonData(int limit) {
         if (!StagingTableService.isValidTableName(tableName)) {
             throw new IllegalArgumentException("Invalid table name format.");
         }
 
         String sql = "SELECT id, raw_json FROM " + tableName +
-                " ORDER BY inserted_at " +
-                " LIMIT ?";
+                " WHERE exported = false" +
+                //" ORDER BY inserted_at" +
+                " FOR UPDATE SKIP LOCKED LIMIT ?";
 
         return jdbcTemplate.query(
                 sql,
-                new Object[] { limit },
                 (rs, rowNum) -> new JsonDataRecord(
                         rs.getLong("id"),
-                        rs.getString("raw_json")));
+                        rs.getString("raw_json")),
+                limit);  
     }
 
-    public int deleteRowsByIds(String tableName, List<Long> ids) {
+    public int markRowsByIds(List<Long> ids) {
         if (!StagingTableService.isValidTableName(tableName)) {
             throw new IllegalArgumentException("Invalid table name format.");
         }
@@ -39,7 +41,7 @@ public class StagingRepository {
 
         NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
 
-        String sql = "DELETE FROM " + tableName + " WHERE id IN (:ids)";
+        String sql = "UPDATE " + tableName + " SET exported = true WHERE id IN (:ids)";
 
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("ids", ids);

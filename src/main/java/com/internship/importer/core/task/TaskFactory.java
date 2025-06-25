@@ -12,44 +12,66 @@ import com.internship.importer.infrastructure.compression.CompressionHandlerFact
 import com.internship.importer.domain.JobConfig;
 import com.internship.importer.infrastructure.export.DataExporter;
 import com.internship.importer.infrastructure.export.HttpDataExporter;
+import com.internship.importer.infrastructure.export.StagingDataProcessor;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.ExecutorService;
+
 @Component
-@AllArgsConstructor
 public class TaskFactory {
 
-    private final TaskStatusManager taskStatusManager;
-    private final CompressionHandlerFactory compressionHandlerFactory;
-    private final StreamConverter streamConverter;
-    private final DataFetcherFactory dataFetcherFactory;
+        private final TaskStatusManager taskStatusManager;
+        private final CompressionHandlerFactory compressionHandlerFactory;
+        private final StreamConverter streamConverter;
+        private final DataFetcherFactory dataFetcherFactory;
+        private final StagingDataProcessor stagingDataProcessor;
+        @Qualifier("exportExecutorService")
+        private final ExecutorService exportExecutorService;
 
-    public DataImportTask createImportTask(
-            String jobName,
-            JobConfig config,
-            javax.sql.DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        StagingTableService tableService = new StagingTableService(jdbcTemplate);
-        StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverter);
-        CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
-        DataFetcher dataFetcher = dataFetcherFactory.createDataFetcher(config.getSource());
+        public TaskFactory(TaskStatusManager taskStatusManager, CompressionHandlerFactory compressionHandlerFactory,
+                        StreamConverter streamConverter, DataFetcherFactory dataFetcherFactory,
+                        StagingDataProcessor stagingDataProcessor, ExecutorService exportExecutorService) {
+                this.taskStatusManager = taskStatusManager;
+                this.compressionHandlerFactory = compressionHandlerFactory;
+                this.streamConverter = streamConverter;
+                this.dataFetcherFactory = dataFetcherFactory;
+                this.stagingDataProcessor = stagingDataProcessor;
+                this.exportExecutorService = exportExecutorService;
+        }
 
-        return new DataImportTask(taskStatusManager, jobName, tableService, config.getTable(), dataFetcher, dataLoader,
-                handler);
-    }
+        public DataImportTask createImportTask(
+                        String jobName,
+                        JobConfig config,
+                        javax.sql.DataSource dataSource) {
+                JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+                StagingTableService tableService = new StagingTableService(jdbcTemplate);
+                StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverter);
+                CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
+                DataFetcher dataFetcher = dataFetcherFactory.createDataFetcher(config.getSource());
 
-    public DataExportTask createExportTask(
-            String jobName,
-            JobConfig config,
-            javax.sql.DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        StagingRepository repository = new StagingRepository(jdbcTemplate);
-        DataExporter exporter = new HttpDataExporter(config.getExportUrl(), repository);
+                return new DataImportTask(taskStatusManager, jobName, tableService, config.getTable(), dataFetcher,
+                                dataLoader,
+                                handler);
+        }
 
-        return new DataExportTask(taskStatusManager, jobName, exporter,
-                config.getMappings().getCompany().toString(),
-                config.getMappings().getIndustry().toString(),
-                config.getTable());
-    }
+        public DataExportTask createExportTask(
+                        String jobName,
+                        JobConfig config,
+                        javax.sql.DataSource dataSource) {
+                JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+                StagingRepository repository = new StagingRepository(jdbcTemplate, config.getTable());
+                DataExporter exporter = new HttpDataExporter(
+                                config.getExportUrl(),
+                                repository,
+                                exportExecutorService,
+                                stagingDataProcessor);
+
+                return new DataExportTask(taskStatusManager, jobName, exporter,
+                                config.getMappings().getCompany().toString(),
+                                config.getMappings().getIndustry().toString(),
+                                config.getTable());
+        }
 }

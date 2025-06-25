@@ -6,6 +6,7 @@ import com.internship.importer.exception.JobCreationException;
 import com.internship.importer.infrastructure.persistence.TaskStatusManager;
 import com.internship.importer.domain.JobConfig;
 import com.internship.importer.core.task.*;
+import com.internship.importer.repository.DatabaseDataSourceFactory;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,7 @@ import javax.sql.DataSource;
 @AllArgsConstructor
 public class JobFactory {
 
-    private final com.internship.importer.repository.DatabaseDataSourceFactory databaseDataSourceFactory;
+    private final DatabaseDataSourceFactory databaseDataSourceFactory;
     private final TaskFactory taskFactory;
     private final TaskStatusManager taskStatusManager;
 
@@ -36,7 +37,7 @@ public class JobFactory {
         DataImportTask dataImportTask = taskFactory.createImportTask(jobName, config, dataSource);
         DataExportTask dataExportTask = taskFactory.createExportTask(jobName, config, dataSource);
 
-        TaskRetryStrategy retryStrategy = new DataImportRetryStrategy(8640000, taskStatusManager, dataImportTask,
+        TaskRetryStrategy retryStrategy = new DataImportRetryStrategy(432000, taskStatusManager, dataImportTask,
                 dataExportTask);
 
         return new DataJob(retryStrategy, jobName, dataImportTask, dataExportTask);
