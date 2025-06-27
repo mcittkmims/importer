@@ -3,11 +3,14 @@ package com.internship.importer.repository;
 import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.sql.DataSource;
+
 @AllArgsConstructor
 public class StagingTableService {
     private final JdbcTemplate jdbcTemplate;
+    private final String tableName;
 
-    public void createStagingTable(String tableName) {
+    public void createStagingTable() {
         if (!isValidTableName(tableName)) {
             throw new IllegalArgumentException("Invalid table name format.");
         }
@@ -24,6 +27,10 @@ public class StagingTableService {
 
     public static boolean isValidTableName(String tableName){
         return tableName.matches("[a-zA-Z_][a-zA-Z0-9_]*");
+    }
+
+    public DataSource getDataSource(){
+        return jdbcTemplate.getDataSource();
     }
 }
 

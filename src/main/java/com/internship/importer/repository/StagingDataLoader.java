@@ -51,6 +51,7 @@ public class StagingDataLoader {
                 throw new IllegalArgumentException("Invalid table name format.");
             }
             pgConnection.getCopyAPI().copyIn("COPY " + tableName + " (raw_json) FROM STDIN", in);
+            connection.commit();
 
         } catch (SQLException e) {
             throw new DataCopyException("Error during database COPY operation", e);

@@ -11,22 +11,22 @@ import java.util.concurrent.ExecutorService;
 public class JobRunner {
 
     private final JobLoader jobLoader;
-    @Qualifier("executorService")
-    private final ExecutorService executorService;
+    @Qualifier("jobExecutorService")
+    private final ExecutorService jobExecutorService;
 
-    public JobRunner(JobLoader jobLoader, ExecutorService executorService) {
+    public JobRunner(JobLoader jobLoader, ExecutorService jobExecutorService) {
         this.jobLoader = jobLoader;
-        this.executorService = executorService;
+        this.jobExecutorService = jobExecutorService;
     }
 
     public void run() {
         for (Job job : jobLoader.getJobs()) {
-            executorService.submit(job::execute);
+            jobExecutorService.submit(job::execute);
         }
     }
 
     @PreDestroy
     public void shutdown() {
-        executorService.shutdown();
+        jobExecutorService.shutdown();
     }
 }
