@@ -7,7 +7,7 @@ public class CompressionHandlerFactory {
     public CompressionHandler getFromString(String type){
         return switch (type){
             case "zip" -> new ZipCompressionHandler();
-            case "none" -> new RawCompressionHandler();
+            case "gzip" -> new GZipCompressionHandler();
             default -> throw new IllegalArgumentException("Unsupported compression type: " + type);
         };
     }
