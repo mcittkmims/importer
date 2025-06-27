@@ -32,7 +32,7 @@ public class TaskFactory {
         private final RepositoryHelper repositoryHelper;
 
         public TaskFactory(TaskStatusManager taskStatusManager, CompressionHandlerFactory compressionHandlerFactory,
-                        StreamConverter streamConverter, DataFetcherFactory dataFetcherFactory,
+                        StreamConverterFactory streamConverterFactory, DataFetcherFactory dataFetcherFactory,
                            ExecutorService exportExecutorService, RepositoryHelper repositoryHelper) {
                 this.taskStatusManager = taskStatusManager;
                 this.compressionHandlerFactory = compressionHandlerFactory;
