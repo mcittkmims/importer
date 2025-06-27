@@ -1,8 +1,7 @@
 {
     "source": {
-        "type": "http",
-        "url": "https://info.gbiz.go.jp/hojin/DownloadJson",
-        "method": "POST"
+        "type": "local",
+        "path": "C:\\LTFViewr\\17.2-EX_XML_EDR_FOP_FULL_20210215.xml.gz"
     },
     "db_credentials" : {
         "username" : "admin",
@@ -27,5 +26,5 @@
                 "industryCode": "$"
             }
         },
-    "archived": "zip"
+    "archived": "gzip"
 }

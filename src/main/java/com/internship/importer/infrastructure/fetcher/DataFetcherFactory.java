@@ -15,6 +15,10 @@ public class DataFetcherFactory {
                 source.setMethod(json.get("method").asText());
                 yield new HttpDataFetcher(source);
             }
+            case "local" -> {
+                String path = json.get("path").asText();
+                yield new FileDataFetcher(path);
+            }
             default -> throw new IllegalArgumentException("Unsupported source type: " + type);
         };
     }

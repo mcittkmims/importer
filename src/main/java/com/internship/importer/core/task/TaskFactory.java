@@ -1,5 +1,6 @@
 package com.internship.importer.core.task;
 
+import com.internship.importer.infrastructure.format.StreamConverterFactory;
 import com.internship.importer.repository.RepositoryHelper;
 import com.internship.importer.repository.StagingDataLoader;
 import com.internship.importer.repository.StagingRepository;
@@ -24,18 +25,18 @@ public class TaskFactory {
 
         private final TaskStatusManager taskStatusManager;
         private final CompressionHandlerFactory compressionHandlerFactory;
-        private final StreamConverter streamConverter;
+        private final StreamConverterFactory streamConverterFactory;
         private final DataFetcherFactory dataFetcherFactory;
         @Qualifier("exportExecutorService")
         private final ExecutorService exportExecutorService;
         private final RepositoryHelper repositoryHelper;
 
         public TaskFactory(TaskStatusManager taskStatusManager, CompressionHandlerFactory compressionHandlerFactory,
-                        StreamConverter streamConverter, DataFetcherFactory dataFetcherFactory,
+                        StreamConverterFactory streamConverterFactory, DataFetcherFactory dataFetcherFactory,
                            ExecutorService exportExecutorService, RepositoryHelper repositoryHelper) {
                 this.taskStatusManager = taskStatusManager;
                 this.compressionHandlerFactory = compressionHandlerFactory;
-                this.streamConverter = streamConverter;
+                this.streamConverterFactory = streamConverterFactory;
                 this.dataFetcherFactory = dataFetcherFactory;
                 this.exportExecutorService = exportExecutorService;
                 this.repositoryHelper = repositoryHelper;
@@ -46,8 +47,10 @@ public class TaskFactory {
                         JobConfig config,
                         javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+                StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverterFactory.getConverter("xml"));
                 StagingTableService tableService = new StagingTableService(jdbcTemplate, config.getTable());
-                StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverter);
+          
                 CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
                 DataFetcher dataFetcher = dataFetcherFactory.createDataFetcher(config.getSource());
 

@@ -91,7 +91,6 @@ public class HttpDataExporter implements DataExporter {
                 }));
             }
 
-            // Wait for all batch tasks to finish
             for (Future<?> future : futures) {
                 future.get();
             }
