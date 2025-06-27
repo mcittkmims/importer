@@ -27,11 +27,19 @@ public class StagingDataLoader {
             Thread writerThread = createWriterThread(inputStream, out);
             writerThread.start();
 
-            copyToDatabase(connection, in, tableName);
+            Thread copyThread = new Thread(() -> {
+                copyToDatabase(connection, in, tableName);
+            });
+            copyThread.start();
+
+            writerThread.join();
+            copyThread.join();
         } catch (SQLException e) {
             throw new DataCopyException("Failed to establish database connection for data loading", e);
         } catch (IOException e) {
             throw new DataCopyException("Failed to load data into database", e);
+        } catch (InterruptedException e) {
+            throw new DataCopyException("Failed to join threads", e);
         }
     }
 
