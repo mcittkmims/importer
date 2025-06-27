@@ -13,7 +13,7 @@ public class ZipCompressionHandler implements CompressionHandler {
 
     @Override
     public void handle(InputStream inputStream, Consumer<InputStream> consumer) {
-        try (ZipInputStream zipIn = new ZipInputStream(new BufferedInputStream(inputStream))) {
+        try (ZipInputStream zipIn = new ZipInputStream(inputStream)) {
             extractZipEntries(zipIn, consumer);
         } catch (IOException e) {
             throw new ZipExtractionException("Failed to handle the zip input stream" + e);

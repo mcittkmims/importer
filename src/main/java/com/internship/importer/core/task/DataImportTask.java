@@ -1,5 +1,6 @@
 package com.internship.importer.core.task;
 
+import com.internship.importer.repository.RepositoryHelper;
 import com.internship.importer.repository.StagingDataLoader;
 import com.internship.importer.repository.StagingTableService;
 import com.internship.importer.exception.DataFetchException;
@@ -25,10 +26,11 @@ public class DataImportTask implements Task {
     private DataFetcher dataFetcher;
     private StagingDataLoader loader;
     private CompressionHandler compressionHandler;
+    private RepositoryHelper repositoryHelper;
 
     public DataImportTask(TaskStatusManager taskStatusManager, String jobName, StagingTableService tableService,
             String tableName, DataFetcher dataFetcher, StagingDataLoader loader,
-            CompressionHandler compressionHandler) {
+            CompressionHandler compressionHandler, RepositoryHelper repositoryHelper) {
         this.taskStatusManager = taskStatusManager;
         this.jobName = jobName;
         this.tableService = tableService;
@@ -36,6 +38,7 @@ public class DataImportTask implements Task {
         this.dataFetcher = dataFetcher;
         this.loader = loader;
         this.compressionHandler = compressionHandler;
+        this.repositoryHelper = repositoryHelper;
     }
 
     @Override
@@ -63,7 +66,7 @@ public class DataImportTask implements Task {
             log.info("Task {} from job {} completed already! Skipping... ", taskName, jobName);
             return;
         }
-        tableService.createStagingTable(tableName);
+        repositoryHelper.createTable(tableService);
         try (InputStream inputStream = dataFetcher.fetchData()) {
             compressionHandler.handle(inputStream, inputStream1 -> loader.loadData(inputStream1, tableName));
         } catch (IOException e) {

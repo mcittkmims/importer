@@ -15,6 +15,8 @@ public class DatabaseDataSourceFactory {
         config.setUsername(username);
         config.setPassword(password);
 
+        config.setAutoCommit(false);
+
         return new HikariDataSource(config);
     }
 }

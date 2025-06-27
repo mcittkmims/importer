@@ -1,5 +1,6 @@
 package com.internship.importer.core.task;
 
+import com.internship.importer.repository.RepositoryHelper;
 import com.internship.importer.repository.StagingDataLoader;
 import com.internship.importer.repository.StagingRepository;
 import com.internship.importer.repository.StagingTableService;
@@ -12,8 +13,6 @@ import com.internship.importer.infrastructure.compression.CompressionHandlerFact
 import com.internship.importer.domain.JobConfig;
 import com.internship.importer.infrastructure.export.DataExporter;
 import com.internship.importer.infrastructure.export.HttpDataExporter;
-import com.internship.importer.infrastructure.export.StagingDataProcessor;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -27,19 +26,19 @@ public class TaskFactory {
         private final CompressionHandlerFactory compressionHandlerFactory;
         private final StreamConverter streamConverter;
         private final DataFetcherFactory dataFetcherFactory;
-        private final StagingDataProcessor stagingDataProcessor;
         @Qualifier("exportExecutorService")
         private final ExecutorService exportExecutorService;
+        private final RepositoryHelper repositoryHelper;
 
         public TaskFactory(TaskStatusManager taskStatusManager, CompressionHandlerFactory compressionHandlerFactory,
                         StreamConverter streamConverter, DataFetcherFactory dataFetcherFactory,
-                        StagingDataProcessor stagingDataProcessor, ExecutorService exportExecutorService) {
+                           ExecutorService exportExecutorService, RepositoryHelper repositoryHelper) {
                 this.taskStatusManager = taskStatusManager;
                 this.compressionHandlerFactory = compressionHandlerFactory;
                 this.streamConverter = streamConverter;
                 this.dataFetcherFactory = dataFetcherFactory;
-                this.stagingDataProcessor = stagingDataProcessor;
                 this.exportExecutorService = exportExecutorService;
+                this.repositoryHelper = repositoryHelper;
         }
 
         public DataImportTask createImportTask(
@@ -47,14 +46,14 @@ public class TaskFactory {
                         JobConfig config,
                         javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-                StagingTableService tableService = new StagingTableService(jdbcTemplate);
+                StagingTableService tableService = new StagingTableService(jdbcTemplate, config.getTable());
                 StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverter);
                 CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
                 DataFetcher dataFetcher = dataFetcherFactory.createDataFetcher(config.getSource());
 
                 return new DataImportTask(taskStatusManager, jobName, tableService, config.getTable(), dataFetcher,
                                 dataLoader,
-                                handler);
+                                handler, repositoryHelper);
         }
 
         public DataExportTask createExportTask(
@@ -62,16 +61,15 @@ public class TaskFactory {
                         JobConfig config,
                         javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-                StagingRepository repository = new StagingRepository(jdbcTemplate, config.getTable());
+                 StagingRepository repository = new StagingRepository(jdbcTemplate, config.getTable());
                 DataExporter exporter = new HttpDataExporter(
                                 config.getExportUrl(),
                                 repository,
                                 exportExecutorService,
-                                stagingDataProcessor);
+                        repositoryHelper);
 
                 return new DataExportTask(taskStatusManager, jobName, exporter,
                                 config.getMappings().getCompany().toString(),
-                                config.getMappings().getIndustry().toString(),
-                                config.getTable());
+                                config.getMappings().getIndustry().toString());
         }
 }
