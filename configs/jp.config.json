@@ -15,15 +15,16 @@
     "mappings" :
         {
             "company" : {
-                "companyName": "$.name",
+                "companyName": "$.NAME",
                 "companyNumber": "$.corporate_number",
                 "companyStatus": "$.status",
-                "companyLocation": "$.location",
-                "dateOfCreation": "$.date_of_establishment",
-                "industries": "$.business_items"
+                "companyLocation": "$.ADDRESS",
+                "dateOfCreation": "$.REGISTRATION",
+                "industries": "$.ACTIVITY_KINDS"
             },
             "industry" : {
-                "industryCode": "$"
+                "industryCode": "$",
+                "industryName": ""
             }
         },
     "archived": "gzip"

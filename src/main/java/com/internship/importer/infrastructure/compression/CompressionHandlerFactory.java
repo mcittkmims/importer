@@ -8,6 +8,7 @@ public class CompressionHandlerFactory {
         return switch (type){
             case "zip" -> new ZipCompressionHandler();
             case "gzip" -> new GZipCompressionHandler();
+            case "xml" -> new RawCompressionHandler();
             default -> throw new IllegalArgumentException("Unsupported compression type: " + type);
         };
     }
