@@ -10,6 +10,8 @@ import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.io.*;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class XmlToNdjsonConverter implements StreamConverter {
@@ -28,14 +30,24 @@ public class XmlToNdjsonConverter implements StreamConverter {
 
             System.out.println("Starting conversion...");
 
+
             String line;
+            String outerTag = null;
             while ((line = reader.readLine()) != null) {
+                if (isDataStartTag(line)) {
+                    outerTag = extractOuterTagName(line);
+                    if (outerTag != null) break;
+                }
+            }
+
+            do {
                 lineCount++;
-                if (!line.contains("<SUBJECT")) continue;
+                if (lineCount == 1000) break;
+                if (!line.contains(outerTag)) continue;
 
                 try {
                     String unescapedLine = StringEscapeUtils.unescapeXml(line);
-                    ObjectNode node = parseSubjectLineWithStAX(unescapedLine, factory, jsonMapper);
+                    ObjectNode node = parseSubjectLineWithStAX(unescapedLine, factory, jsonMapper, outerTag);
 
                     if (node != null) {
                         writer.write(jsonMapper.writeValueAsString(node));
@@ -59,7 +71,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
                         System.err.printf("WARNING: %,d total errors%n", errorCount);
                     }
                 }
-            }
+            } while ((line = reader.readLine()) != null);
 
             writer.flush();
             long totalTime = System.currentTimeMillis() - startTime;
@@ -71,7 +83,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
         }
     }
 
-    private ObjectNode parseSubjectLineWithStAX(String line, XMLInputFactory factory, ObjectMapper mapper) throws XMLStreamException {
+    private ObjectNode parseSubjectLineWithStAX(String line, XMLInputFactory factory, ObjectMapper mapper, String outerTag) throws XMLStreamException {
         XMLEventReader xmlReader = factory.createXMLEventReader(new StringReader(line));
         ObjectNode node = null;
 
@@ -80,7 +92,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
 
             if (event.isStartElement()) {
                 StartElement start = event.asStartElement();
-                if ("SUBJECT".equalsIgnoreCase(start.getName().getLocalPart())) {
+                if (outerTag.equalsIgnoreCase(start.getName().getLocalPart())) {
                     node = mapper.createObjectNode();
 
                     for (Iterator<?> it = start.getAttributes(); it.hasNext(); ) {
@@ -136,8 +148,8 @@ public class XmlToNdjsonConverter implements StreamConverter {
                 .replace("\t", " ")
                 .replaceAll("\\s+", " ")
                 .trim()
-                .replace("\\", "\\\\")  // Escape backslashes first
-                .replace("\"", "\\\"")  // Escape quotes
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
                 .replace("\u0000", "");
     }
 
@@ -150,4 +162,34 @@ public class XmlToNdjsonConverter implements StreamConverter {
         else if (minutes > 0) return String.format("%dm %ds", minutes, seconds % 60);
         else return String.format("%ds", seconds);
     }
+
+    private String extractOuterTagName(String line) {
+        line = line.trim();
+
+        Pattern openTagPattern = Pattern.compile("<\\s*([\\w:-]+)");
+        Matcher openMatcher = openTagPattern.matcher(line);
+
+        if (openMatcher.find()) {
+            String tagName = openMatcher.group(1);
+
+            String closingTag = "</" + tagName + ">";
+
+            if (line.contains(closingTag)) {
+                return tagName;
+            }
+        }
+
+        return null;
+    }
+
+
+    public static boolean isDataStartTag(String line) {
+        line = line.trim();
+
+        return line.startsWith("<") &&
+                !line.startsWith("<?") &&
+                !line.startsWith("<!--") &&
+                !line.startsWith("<!");
+    }
+
 }
