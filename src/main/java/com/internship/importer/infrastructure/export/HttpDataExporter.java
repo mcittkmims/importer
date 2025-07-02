@@ -21,6 +21,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
@@ -36,13 +37,16 @@ public class HttpDataExporter implements DataExporter {
 
 
 
-    public void sendStagingData(String companyJsonData, String industryJsonData) {
+    public void sendStagingData(String companyJsonData, String industryJsonData,
+                                String taxAuthorityJsonData, String taxInfoJsonData) {
         int batchSize = 100;
         try (Stream<JsonDataRecord> stream = repository.getUnprocessedJsonDataStream()) {
             Iterator<JsonDataRecord> sourceIterator = stream.iterator();
             System.out.println("hey");
             ContentBody companyBody = new StringBody(companyJsonData, ContentType.APPLICATION_JSON);
             ContentBody industryBody = new StringBody(industryJsonData, ContentType.APPLICATION_JSON);
+            ContentBody taxAuthorityBody = new StringBody(taxAuthorityJsonData, ContentType.APPLICATION_JSON);
+            ContentBody taxInfoBody = new StringBody(taxInfoJsonData, ContentType.APPLICATION_JSON);
 
             List<Future<?>> futures = new ArrayList<>();
 
@@ -75,6 +79,8 @@ public class HttpDataExporter implements DataExporter {
                         HttpEntity entity = MultipartEntityBuilder.create()
                                 .addPart("companyMapping", companyBody)
                                 .addPart("industryMapping", industryBody)
+                                .addPart("taxAuthorityMapping", taxAuthorityBody)
+                                .addPart("taxInfoMapping", taxInfoBody)
                                 .addPart("data", dataBody)
                                 .build();
 
@@ -110,13 +116,19 @@ public class HttpDataExporter implements DataExporter {
              CloseableHttpResponse response = httpClient.execute(post)) {
 
             int statusCode = response.getStatusLine().getStatusCode();
+            String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
             if (statusCode >= 400) {
-                throw new HttpRequestException("HTTP request failed with status: " + statusCode, statusCode);
+                String reasonPhrase = response.getStatusLine().getReasonPhrase();
+                String message = String.format(
+                        "HTTP request failed with status: %d %s. Server response: %s",
+                        statusCode, reasonPhrase, responseString
+                );
+                throw new HttpRequestException(message, statusCode);
             }
 
-            String responseString = EntityUtils.toString(response.getEntity());
             log.info("Server response: {}", responseString);
         }
     }
+
 }

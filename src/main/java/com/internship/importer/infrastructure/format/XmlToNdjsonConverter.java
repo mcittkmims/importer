@@ -42,7 +42,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
 
             do {
                 lineCount++;
-                if (lineCount == 1000) break;
+                if (lineCount == 10000) break;
                 if (!line.contains(outerTag)) continue;
 
                 try {

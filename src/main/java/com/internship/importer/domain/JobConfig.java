@@ -39,5 +39,7 @@ public class JobConfig {
     public static class Mappings {
         private JsonNode company;
         private JsonNode industry;
+        private JsonNode taxAuthority;
+        private JsonNode taxInfo;
     }
 }

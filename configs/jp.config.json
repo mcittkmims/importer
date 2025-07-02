@@ -16,15 +16,28 @@
         {
             "company" : {
                 "companyName": "$.NAME",
-                "companyNumber": "$.corporate_number",
-                "companyStatus": "$.status",
+                "companyNumber": "$.@record",
+                "companyStatus": "$.STAN",
                 "companyLocation": "$.ADDRESS",
                 "dateOfCreation": "$.REGISTRATION",
-                "industries": "$.ACTIVITY_KINDS"
+                "industries": "$.ACTIVITY_KINDS.ACTIVITY_KIND",
+                "companyAuthority": "$.CURRENT_AUTHORITY",
+                "terminationDate" : "$.TERMINATED_INFO",
+                "taxInfo" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
+                "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER"
             },
             "industry" : {
-                "industryCode": "$",
-                "industryName": ""
+                "industryCode": "$.CODE",
+                "industryName": "$.NAME"
+            },
+            "taxAuthority" : {
+                "authorityCode" : "$.AUTHORITY_CODE",
+                "authorityName" : "$.AUTHORITY_NAME"
+            },
+            "taxInfo" : {
+                "taxRegistrationNumber" : "$.START_NUM",
+                "dateOfRegistration" : "$.START_DATE",
+                "taxPayerType" : "$.TAX_PAYER_TYPE"
             }
         },
     "archived": "gzip"
