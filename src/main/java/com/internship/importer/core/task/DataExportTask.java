@@ -13,15 +13,19 @@ public class DataExportTask implements Task {
     private DataExporter dataExporter;
     private String companyJsonData;
     private String industryJsonData;
+    private String taxAuthorityJsonData;
+    private String taxInfoJsonData;
 
 
     public DataExportTask(TaskStatusManager taskStatusManager, String jobName, DataExporter dataExporter,
-            String companyJsonData, String industryJsonData) {
+                          String companyJsonData, String industryJsonData, String taxAuthorityJsonData, String taxInfoJsonData) {
         this.taskStatusManager = taskStatusManager;
         this.jobName = jobName;
         this.dataExporter = dataExporter;
         this.companyJsonData = companyJsonData;
         this.industryJsonData = industryJsonData;
+        this.taxAuthorityJsonData = taxAuthorityJsonData;
+        this.taxInfoJsonData = taxInfoJsonData;
     }
 
     @Override
@@ -49,7 +53,8 @@ public class DataExportTask implements Task {
             log.info("Task {} from job {} completed already! Skipping... ", task, jobName);
             return;
         }
-        dataExporter.sendStagingData(companyJsonData, industryJsonData);
+        dataExporter.sendStagingData(companyJsonData, industryJsonData,
+                taxAuthorityJsonData, taxInfoJsonData);
         this.setToCompleteStatus();
         log.info("Task {} from job {} completed!", task, jobName);
     }

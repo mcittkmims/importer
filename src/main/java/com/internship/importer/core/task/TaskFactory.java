@@ -7,7 +7,6 @@ import com.internship.importer.repository.StagingRepository;
 import com.internship.importer.repository.StagingTableService;
 import com.internship.importer.infrastructure.fetcher.DataFetcher;
 import com.internship.importer.infrastructure.fetcher.DataFetcherFactory;
-import com.internship.importer.infrastructure.format.StreamConverter;
 import com.internship.importer.infrastructure.persistence.TaskStatusManager;
 import com.internship.importer.infrastructure.compression.CompressionHandler;
 import com.internship.importer.infrastructure.compression.CompressionHandlerFactory;
@@ -73,6 +72,8 @@ public class TaskFactory {
 
                 return new DataExportTask(taskStatusManager, jobName, exporter,
                                 config.getMappings().getCompany().toString(),
-                                config.getMappings().getIndustry().toString());
+                                config.getMappings().getIndustry().toString(),
+                                config.getMappings().getTaxAuthority().toString(),
+                                config.getMappings().getTaxInfo().toString());
         }
 }
