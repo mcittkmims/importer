@@ -40,5 +40,6 @@
                 "taxPayerType" : "$.TAX_PAYER_TYPE"
             }
         },
-    "archived": "gzip"
+    "archived": "gzip",
+    "data_type" : "xml"
 }

@@ -24,6 +24,9 @@ public class JobConfig {
 
     private String archived;
 
+    @JsonProperty("data_type")
+    private String dataType;
+
     @Data
     public static class DbCredentials {
         private String username;

@@ -30,83 +30,107 @@ import java.util.stream.Stream;
 @Slf4j
 public class HttpDataExporter implements DataExporter {
 
-    private String uploadUrl;
-    private StagingRepository repository;
-    private ExecutorService executorService;
-    private RepositoryHelper repositoryHelper;
+    private final String uploadUrl;
+    private final StagingRepository repository;
+    private final ExecutorService executorService;
+    private final RepositoryHelper repositoryHelper;
 
+    private static final int BATCH_SIZE = 100;
 
-
+    @Override
     public void sendStagingData(String companyJsonData, String industryJsonData,
                                 String taxAuthorityJsonData, String taxInfoJsonData) {
-        int batchSize = 100;
         try (Stream<JsonDataRecord> stream = repository.getUnprocessedJsonDataStream()) {
             Iterator<JsonDataRecord> sourceIterator = stream.iterator();
-            System.out.println("hey");
-            ContentBody companyBody = new StringBody(companyJsonData, ContentType.APPLICATION_JSON);
-            ContentBody industryBody = new StringBody(industryJsonData, ContentType.APPLICATION_JSON);
-            ContentBody taxAuthorityBody = new StringBody(taxAuthorityJsonData, ContentType.APPLICATION_JSON);
-            ContentBody taxInfoBody = new StringBody(taxInfoJsonData, ContentType.APPLICATION_JSON);
+
+            ContentBody companyBody = createJsonBody(companyJsonData);
+            ContentBody industryBody = createJsonBody(industryJsonData);
+            ContentBody taxAuthorityBody = createJsonBody(taxAuthorityJsonData);
+            ContentBody taxInfoBody = createJsonBody(taxInfoJsonData);
 
             List<Future<?>> futures = new ArrayList<>();
 
-            // This executorService should be provided/injected, reused across calls
-            // We just submit batch processing to it
-
             while (sourceIterator.hasNext()) {
-                List<JsonDataRecord> batch = new ArrayList<>(batchSize);
-
-                for (int i = 0; i < batchSize && sourceIterator.hasNext(); i++) {
-                    batch.add(sourceIterator.next());
-                }
+                List<JsonDataRecord> batch = getNextBatch(sourceIterator);
 
                 if (batch.isEmpty()) {
                     break;
                 }
 
-                futures.add(executorService.submit(() -> {
-                    try {
-                        Iterator<String> jsonIterator = batch.stream()
-                                .map(r -> r.getRawJson() + "\n")
-                                .iterator();
-
-                        InputStreamBody dataBody = new InputStreamBody(
-                                new StreamingInputStream(jsonIterator),
-                                ContentType.APPLICATION_JSON,
-                                "data.ndjson"
-                        );
-
-                        HttpEntity entity = MultipartEntityBuilder.create()
-                                .addPart("companyMapping", companyBody)
-                                .addPart("industryMapping", industryBody)
-                                .addPart("taxAuthorityMapping", taxAuthorityBody)
-                                .addPart("taxInfoMapping", taxInfoBody)
-                                .addPart("data", dataBody)
-                                .build();
-
-                        executeHttpRequest(entity);
-
-                        List<Long> ids = batch.stream().map(JsonDataRecord::getId).toList();
-                        repositoryHelper.markRowsWithTransaction(repository, ids);
-
-                        log.info("Processed batch of {} records", batch.size());
-                    } catch (Exception e) {
-                        log.error("Failed to process batch", e);
-                        throw new DataExportException("Batch processing failed", e);
-                    }
-                }));
+                futures.add(submitBatchProcessing(batch, companyBody, industryBody, taxAuthorityBody, taxInfoBody));
             }
 
-            for (Future<?> future : futures) {
-                future.get();
-            }
-            futures.clear();
+            waitForCompletion(futures);
         } catch (Exception e) {
             throw new DataExportException("Export process failed", e);
         }
     }
 
+    private ContentBody createJsonBody(String jsonData) {
+        return new StringBody(jsonData, ContentType.APPLICATION_JSON);
+    }
 
+    private List<JsonDataRecord> getNextBatch(Iterator<JsonDataRecord> sourceIterator) {
+        List<JsonDataRecord> batch = new ArrayList<>(BATCH_SIZE);
+        for (int i = 0; i < BATCH_SIZE && sourceIterator.hasNext(); i++) {
+            batch.add(sourceIterator.next());
+        }
+        return batch;
+    }
+
+    private Future<?> submitBatchProcessing(List<JsonDataRecord> batch,
+                                            ContentBody companyBody,
+                                            ContentBody industryBody,
+                                            ContentBody taxAuthorityBody,
+                                            ContentBody taxInfoBody) {
+        return executorService.submit(() -> {
+            try {
+                HttpEntity entity = buildMultipartEntity(batch, companyBody, industryBody, taxAuthorityBody, taxInfoBody);
+                executeHttpRequest(entity);
+                markBatchAsProcessed(batch);
+                log.info("Processed batch of {} records", batch.size());
+            } catch (Exception e) {
+                log.error("Failed to process batch", e);
+                throw new DataExportException("Batch processing failed", e);
+            }
+        });
+    }
+
+    private HttpEntity buildMultipartEntity(List<JsonDataRecord> batch,
+                                            ContentBody companyBody,
+                                            ContentBody industryBody,
+                                            ContentBody taxAuthorityBody,
+                                            ContentBody taxInfoBody) {
+        Iterator<String> jsonIterator = batch.stream()
+                .map(r -> r.getRawJson() + "\n")
+                .iterator();
+
+        InputStreamBody dataBody = new InputStreamBody(
+                new StreamingInputStream(jsonIterator),
+                ContentType.APPLICATION_JSON,
+                "data.ndjson"
+        );
+
+        return MultipartEntityBuilder.create()
+                .addPart("companyMapping", companyBody)
+                .addPart("industryMapping", industryBody)
+                .addPart("taxAuthorityMapping", taxAuthorityBody)
+                .addPart("taxInfoMapping", taxInfoBody)
+                .addPart("data", dataBody)
+                .build();
+    }
+
+    private void markBatchAsProcessed(List<JsonDataRecord> batch) {
+        List<Long> ids = batch.stream().map(JsonDataRecord::getId).toList();
+        repositoryHelper.markRowsWithTransaction(repository, ids);
+    }
+
+    private void waitForCompletion(List<Future<?>> futures) throws InterruptedException, ExecutionException {
+        for (Future<?> future : futures) {
+            future.get();
+        }
+        futures.clear();
+    }
 
     private void executeHttpRequest(HttpEntity entity) throws IOException {
         HttpPost post = new HttpPost(uploadUrl);
@@ -130,5 +154,4 @@ public class HttpDataExporter implements DataExporter {
             log.info("Server response: {}", responseString);
         }
     }
-
 }

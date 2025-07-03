@@ -47,7 +47,7 @@ public class TaskFactory {
                         javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
-                StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverterFactory.getConverter("xml"));
+                StagingDataLoader dataLoader = new StagingDataLoader(dataSource, streamConverterFactory.getConverter(config.getDataType()));
                 StagingTableService tableService = new StagingTableService(jdbcTemplate, config.getTable());
           
                 CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
