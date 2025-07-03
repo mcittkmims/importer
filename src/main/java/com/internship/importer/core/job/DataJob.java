@@ -20,6 +20,7 @@ public class DataJob implements Job {
 
     public void execute() {
         retryStrategy.evaluateTasks();
+        log.info("Job {} started!", jobName);
         for (Task task : tasks) {
             task.execute();
         }

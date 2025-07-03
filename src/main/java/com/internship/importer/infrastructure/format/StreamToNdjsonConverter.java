@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.internship.importer.exception.JsonParsingException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.io.Writer;
 
 @Component
+@Slf4j
 public class StreamToNdjsonConverter implements StreamConverter{
 
     public void convertInputStream(InputStream inputStream, Writer writer) {
@@ -20,6 +22,8 @@ public class StreamToNdjsonConverter implements StreamConverter{
             ObjectMapper mapper = new ObjectMapper();
             JsonFactory factory = mapper.getFactory();
             JsonParser parser = factory.createParser(inputStream);
+
+            log.info("JSON stream converter started...");
 
             JsonToken token = parser.nextToken();
 
