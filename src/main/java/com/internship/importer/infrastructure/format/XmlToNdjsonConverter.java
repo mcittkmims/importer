@@ -139,7 +139,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
         while ((line = reader.readLine()) != null) {
             if (isDataStartTag(line)) {
                 String tag = extractOuterTagName(line);
-                if (tag != null) break;
+                if (tag != null) return tag;
             }
         }
         throw new XmlParsingException("Outer tag not found");
