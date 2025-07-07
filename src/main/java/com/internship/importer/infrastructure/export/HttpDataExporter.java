@@ -35,7 +35,7 @@ public class HttpDataExporter implements DataExporter {
     private final ExecutorService executorService;
     private final RepositoryHelper repositoryHelper;
 
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 1000;
 
     @Override
     public void sendStagingData(String companyJsonData, String industryJsonData,
@@ -48,23 +48,61 @@ public class HttpDataExporter implements DataExporter {
             ContentBody taxAuthorityBody = createJsonBody(taxAuthorityJsonData);
             ContentBody taxInfoBody = createJsonBody(taxInfoJsonData);
 
-            List<Future<?>> futures = new ArrayList<>();
+            int maxConcurrentTasks = 10;
+            ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<>(executorService);
+            int submitted = 0;
+            int completed = 0;
 
             while (sourceIterator.hasNext()) {
                 List<JsonDataRecord> batch = getNextBatch(sourceIterator);
+                if (batch.isEmpty()) break;
 
-                if (batch.isEmpty()) {
-                    break;
+                List<JsonDataRecord> batchCopy = new ArrayList<>(batch); // avoid closure issues
+
+                completionService.submit(() -> {
+                    processBatch(batchCopy, companyBody, industryBody, taxAuthorityBody, taxInfoBody);
+                    return null;
+                });
+
+                submitted++;
+
+                // Wait for one to finish if we've hit the concurrency limit
+                if (submitted - completed >= maxConcurrentTasks) {
+                    Future<Void> finished = completionService.take(); // blocks
+                    finished.get(); // rethrows error if any
+                    completed++;
                 }
-
-                futures.add(submitBatchProcessing(batch, companyBody, industryBody, taxAuthorityBody, taxInfoBody));
             }
 
-            waitForCompletion(futures);
+            // Wait for remaining tasks
+            while (completed < submitted) {
+                Future<Void> finished = completionService.take();
+                finished.get();
+                completed++;
+            }
+
         } catch (Exception e) {
             throw new DataExportException("Export process failed", e);
         }
     }
+
+    private void processBatch(List<JsonDataRecord> batch,
+                              ContentBody companyBody,
+                              ContentBody industryBody,
+                              ContentBody taxAuthorityBody,
+                              ContentBody taxInfoBody) {
+        try {
+            HttpEntity entity = buildMultipartEntity(batch, companyBody, industryBody, taxAuthorityBody, taxInfoBody);
+            executeHttpRequest(entity);
+            markBatchAsProcessed(batch);
+            log.info("Processed batch of {} records", batch.size());
+        } catch (Exception e) {
+            log.error("Failed to process batch", e);
+            throw new DataExportException("Batch processing failed", e);
+        }
+    }
+
+
 
     private ContentBody createJsonBody(String jsonData) {
         return new StringBody(jsonData, ContentType.APPLICATION_JSON);
@@ -140,18 +178,15 @@ public class HttpDataExporter implements DataExporter {
              CloseableHttpResponse response = httpClient.execute(post)) {
 
             int statusCode = response.getStatusLine().getStatusCode();
-            String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
             if (statusCode >= 400) {
                 String reasonPhrase = response.getStatusLine().getReasonPhrase();
                 String message = String.format(
-                        "HTTP request failed with status: %d %s. Server response: %s",
-                        statusCode, reasonPhrase, responseString
+                        "HTTP request failed with status: %d %s.",
+                        statusCode, reasonPhrase
                 );
                 throw new HttpRequestException(message, statusCode);
             }
-
-            log.info("Server response: {}", responseString);
         }
     }
 }

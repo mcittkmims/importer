@@ -97,10 +97,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
 
     private String cleanValue(String value) {
         if (value == null) return "";
-        return value.replace("\r", "")
-                .replace("\n", " ")
-                .replace("\t", " ")
-                .replaceAll("\\s+", " ")
+        return value.replaceAll("\\s+", " ")
                 .trim()
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"")

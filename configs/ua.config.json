@@ -24,7 +24,8 @@
                 "companyAuthority": "$.CURRENT_AUTHORITY",
                 "terminationDate" : "$.TERMINATED_INFO",
                 "taxInfo" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
-                "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER"
+                "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
+                "country" : "Ukraine"
             },
             "industry" : {
                 "industryCode": "$.CODE",
