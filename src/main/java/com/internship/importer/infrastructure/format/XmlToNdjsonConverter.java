@@ -3,6 +3,7 @@ package com.internship.importer.infrastructure.format;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.internship.importer.exception.XmlParsingException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
+@Slf4j
 public class XmlToNdjsonConverter implements StreamConverter {
 
     @Override
@@ -23,7 +25,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
             ObjectMapper jsonMapper = new ObjectMapper();
             XMLInputFactory factory = XMLInputFactory.newInstance();
 
-            System.out.println("Starting conversion...");
+            log.info("XML conversion started...");
 
 
             String outerTag = findOuterTag(reader);
@@ -95,10 +97,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
 
     private String cleanValue(String value) {
         if (value == null) return "";
-        return value.replace("\r", "")
-                .replace("\n", " ")
-                .replace("\t", " ")
-                .replaceAll("\\s+", " ")
+        return value.replaceAll("\\s+", " ")
                 .trim()
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"")
