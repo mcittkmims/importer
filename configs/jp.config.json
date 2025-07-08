@@ -1,0 +1,37 @@
+{
+  "source": {
+    "type": "http",
+    "url": "https://info.gbiz.go.jp/hojin/DownloadJson",
+    "method": "POST"
+  },
+  "db_credentials": {
+    "username": "admin",
+    "password": "admin"
+  },
+  "db_connection": {
+    "jdbc": "jdbc:postgresql://localhost:5432/company_data"
+  },
+  "table": "japan_company_data",
+  "export_url": "http://localhost:8080/upload",
+  "mappings": {
+    "company": {
+      "companyName": "$.name",
+      "companyNumber": "$.corporate_number",
+      "companyStatus": "$.status",
+      "companyLocation": "$.location",
+      "dateOfCreation": "$.date_of_establishment",
+      "industries": "$.business_items",
+      "country": "Japan"
+    },
+    "industry": {
+      "industryCode": "$"
+    },
+    "taxAuthority" : {
+    },
+    "taxInfo" : {
+    }
+  },
+  "archived": "zip",
+  "data_type" : "json"
+
+}

@@ -1,8 +1,7 @@
 {
     "source": {
-        "type": "http",
-        "url": "https://info.gbiz.go.jp/hojin/DownloadJson",
-        "method": "POST"
+        "type": "local",
+        "path": "C:\\LTFViewr\\17.2-EX_XML_EDR_FOP_FULL_20210215.xml.gz"
     },
     "db_credentials" : {
         "username" : "admin",
@@ -14,53 +13,34 @@
     "table" : "ukraine_company_data",
     "export_url" : "http://localhost:8080/upload",
     "mappings" :
-<<<<<<< HEAD:configs/jp.config.json
     {
         "company" : {
-            "companyName": "$.name",
-            "companyNumber": "$.corporate_number",
-            "companyStatus": "$.status",
-            "companyLocation": "$.location",
-            "dateOfCreation": "$.date_of_establishment",
-            "industries": "$.business_items"
-=======
-        {
-            "company" : {
-                "companyName": "$.NAME",
-                "companyNumber": "$.@record",
-                "companyStatus": "$.STAN",
-                "companyLocation": "$.ADDRESS",
-                "dateOfCreation": "$.REGISTRATION",
-                "industries": "$.ACTIVITY_KINDS.ACTIVITY_KIND",
-                "companyAuthority": "$.CURRENT_AUTHORITY",
-                "terminationDate" : "$.TERMINATED_INFO",
-                "taxInfo" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
-                "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
-                "country" : "Ukraine"
-            },
-            "industry" : {
-                "industryCode": "$.CODE",
-                "industryName": "$.NAME"
-            },
-            "taxAuthority" : {
-                "authorityCode" : "$.AUTHORITY_CODE",
-                "authorityName" : "$.AUTHORITY_NAME"
-            },
-            "taxInfo" : {
-                "taxRegistrationNumber" : "$.START_NUM",
-                "dateOfRegistration" : "$.START_DATE",
-                "taxPayerType" : "$.TAX_PAYER_TYPE"
-            }
->>>>>>> origin/ver3_3:configs/ua.config.json
+            "companyName": "$.NAME",
+            "companyNumber": "$.@record",
+            "companyStatus": "$.STAN",
+            "companyLocation": "$.ADDRESS",
+            "dateOfCreation": "$.REGISTRATION",
+            "industries": "$.ACTIVITY_KINDS.ACTIVITY_KIND",
+            "companyAuthority": "$.CURRENT_AUTHORITY",
+            "terminationDate" : "$.TERMINATED_INFO",
+            "taxInfo" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
+            "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
+            "country" : "Ukraine"
         },
         "industry" : {
-            "industryCode": "$"
+            "industryCode": "$.CODE",
+            "industryName": "$.NAME"
         },
         "taxAuthority" : {
+            "authorityCode" : "$.AUTHORITY_CODE",
+            "authorityName" : "$.AUTHORITY_NAME"
         },
         "taxInfo" : {
+            "taxRegistrationNumber" : "$.START_NUM",
+            "dateOfRegistration" : "$.START_DATE",
+            "taxPayerType" : "$.TAX_PAYER_TYPE"
         }
     },
-    "data_type": "json",
-    "archived": "zip"
+    "archived": "gzip",
+    "data_type" : "xml"
 }
