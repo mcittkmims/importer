@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 public class ExportExecutorConfig {
     @Bean(name = "exportExecutorService", destroyMethod = "shutdown")
     public ExecutorService exportExecutorService() {
-        return Executors.newFixedThreadPool(10);
+        // Use the same logic as HttpDataExporter for thread count
+        return Executors.newFixedThreadPool(2);
     }
 }

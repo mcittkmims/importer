@@ -18,21 +18,6 @@ public class StagingRepository {
     private final JdbcTemplate jdbcTemplate;
     private final String tableName;
 
-    public Stream<JsonDataRecord> getUnprocessedJsonDataStream() {
-        if (!StagingTableService.isValidTableName(tableName)) {
-            throw new IllegalArgumentException("Invalid table name format.");
-        }
-        String sql = "SELECT id, raw_json FROM " + tableName + " WHERE exported = false ORDER BY id";
-        jdbcTemplate.setFetchSize(100);
-        return jdbcTemplate.queryForStream(
-                sql,
-                (rs, rowNum) -> new JsonDataRecord(
-                        rs.getLong("id"),
-                        rs.getString("raw_json")
-                )
-        );
-    }
-
 
     public int markRowsByIds(List<Long> ids) {
         if (!StagingTableService.isValidTableName(tableName)) {

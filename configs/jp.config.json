@@ -1,7 +1,8 @@
 {
     "source": {
-        "type": "local",
-        "path": "C:\\LTFViewr\\17.2-EX_XML_EDR_FOP_FULL_20210215.xml.gz"
+        "type": "http",
+        "url": "https://info.gbiz.go.jp/hojin/DownloadJson",
+        "method": "POST"
     },
     "db_credentials" : {
         "username" : "admin",
@@ -13,33 +14,23 @@
     "table" : "japan_company_data",
     "export_url" : "http://localhost:8080/upload",
     "mappings" :
-        {
-            "company" : {
-                "companyName": "$.NAME",
-                "companyNumber": "$.@record",
-                "companyStatus": "$.STAN",
-                "companyLocation": "$.ADDRESS",
-                "dateOfCreation": "$.REGISTRATION",
-                "industries": "$.ACTIVITY_KINDS.ACTIVITY_KIND",
-                "companyAuthority": "$.CURRENT_AUTHORITY",
-                "terminationDate" : "$.TERMINATED_INFO",
-                "taxInfo" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER",
-                "taxAuthority" : "$.EXCHANGE_DATA.EXCHANGE_ANSWER"
-            },
-            "industry" : {
-                "industryCode": "$.CODE",
-                "industryName": "$.NAME"
-            },
-            "taxAuthority" : {
-                "authorityCode" : "$.AUTHORITY_CODE",
-                "authorityName" : "$.AUTHORITY_NAME"
-            },
-            "taxInfo" : {
-                "taxRegistrationNumber" : "$.START_NUM",
-                "dateOfRegistration" : "$.START_DATE",
-                "taxPayerType" : "$.TAX_PAYER_TYPE"
-            }
+    {
+        "company" : {
+            "companyName": "$.name",
+            "companyNumber": "$.corporate_number",
+            "companyStatus": "$.status",
+            "companyLocation": "$.location",
+            "dateOfCreation": "$.date_of_establishment",
+            "industries": "$.business_items"
         },
-    "archived": "gzip",
-    "data_type" : "xml"
+        "industry" : {
+            "industryCode": "$"
+        },
+        "taxAuthority" : {
+        },
+        "taxInfo" : {
+        }
+    },
+    "data_type": "json",
+    "archived": "zip"
 }

@@ -11,7 +11,7 @@ public class StreamConverterFactory {
     public StreamConverter getConverter(String type){
         return switch(type){
             case "xml" -> xmlToNdjsonConverter;
-            case "zip" -> streamToNdjsonConverter;
+            case "json" -> streamToNdjsonConverter;
             default -> throw new IllegalArgumentException("Non existent type");
         };
     }
