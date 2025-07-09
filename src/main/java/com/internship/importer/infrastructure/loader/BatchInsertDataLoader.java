@@ -4,7 +4,6 @@ import com.internship.importer.domain.JsonData;
 import com.internship.importer.domain.PartitionBatch;
 import com.internship.importer.exception.JsonParsingException;
 import com.internship.importer.infrastructure.format.StreamConverter;
-import com.internship.importer.repository.PartitionRepository;
 import com.internship.importer.repository.StagingRepository;
 import com.internship.importer.util.HashUtil;
 import lombok.RequiredArgsConstructor;

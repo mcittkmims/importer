@@ -33,8 +33,8 @@ public class StagingTableService {
                 "            id BIGSERIAL PRIMARY KEY,\n" +
                 "            start_id INT,\n" +
                 "            end_id INT,\n" +
-                "            status BOOLEAN,\n" +
-                "            processing_status VARCHAR(20) DEFAULT 'PENDING'\n" +
+                "            sent_status BOOLEAN NOT NULL DEFAULT FALSE,\n" +
+                "            in_progress BOOLEAN NOT NULL DEFAULT false" +
                 "    );";
 
         jdbcTemplate.execute(sql);

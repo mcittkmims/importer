@@ -78,29 +78,37 @@ public class StagingRepository {
         });
 
     }
-    // public int markRowsByIds(List<Long> ids) {
-    //     if (!StagingTableService.isValidTableName(tableName)) {
-    //         throw new IllegalArgumentException("Invalid table name format.");
-    //     }
-    //     if (ids == null || ids.isEmpty()) {
-    //         return 0;
-    //     }
 
-    //     NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
+    public List<PartitionBatch> lockAndFetchPartitions(int limit) {
+        String sql = "UPDATE company_partition " +
+                "SET in_progress = true " +
+                "WHERE id IN (SELECT id FROM company_partition " +
+                "            WHERE sent_status = false AND in_progress = false " +
+                "            FOR UPDATE SKIP LOCKED LIMIT ?) " +
+                "RETURNING id, start_id, end_id, sent_status";
 
-    //     String sql = "UPDATE " + tableName + " SET exported = true WHERE id IN (:ids)";
-
-    //     MapSqlParameterSource params = new MapSqlParameterSource();
-    //     params.addValue("ids", ids);
-
-    //     return namedJdbcTemplate.update(sql, params);
-    // }
-
-    public DataSource getDataSource(){
-        return jdbcTemplate.getDataSource();
+        return jdbcTemplate.query(sql, new Object[]{limit}, (rs, rowNum) -> new PartitionBatch(
+                rs.getLong("id"),
+                rs.getInt("start_id"),
+                rs.getInt("end_id"),
+                rs.getBoolean("sent_status")
+        ));
     }
 
+    public void markPartitionAsSent(long partitionId) {
+        String sql = "UPDATE company_partition SET sent_status = true, in_progress = false WHERE id = ?";
+        jdbcTemplate.update(sql, partitionId);
+    }
 
+    public void markPartitionAsFailed(long partitionId) {
+        String sql = "UPDATE company_partition SET in_progress = false WHERE id = ?";
+        jdbcTemplate.update(sql, partitionId);
+    }
+
+    public List<String> getRawJsonForPartition(int startId, int endId) {
+        String sql = "SELECT raw_json FROM " + tableName + " WHERE id BETWEEN ? AND ?";
+        return jdbcTemplate.query(sql, new Object[]{startId, endId}, (rs, rowNum) -> rs.getString("raw_json"));
+    }
 
 
 }
