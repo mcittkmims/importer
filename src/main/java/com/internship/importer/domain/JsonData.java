@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PartitionBatch {
-    private final Integer startId;
-    private final Integer endId;
+public class JsonData {
+    private String rawJson;
+    private String jsonHash;
 }

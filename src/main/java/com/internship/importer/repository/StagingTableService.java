@@ -17,10 +17,11 @@ public class StagingTableService {
 
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
                 "id BIGSERIAL PRIMARY KEY, " +
-                "raw_json JSONB UNIQUE, " +
-                "inserted_at TIMESTAMP DEFAULT NOW(), " +
-                "partitioned BOOL DEFAULT FALSE" +
+                "raw_json JSONB NOT NULL, " +
+                "json_hash TEXT UNIQUE NOT NULL, " +
+                "inserted_at TIMESTAMP DEFAULT NOW()" +
                 ")";
+
 
         jdbcTemplate.execute(sql);
 

@@ -2,7 +2,6 @@ package com.internship.importer.core.task;
 
 import com.internship.importer.infrastructure.format.StreamConverterFactory;
 import com.internship.importer.infrastructure.loader.BatchInsertDataLoader;
-import com.internship.importer.infrastructure.loader.CopyDataLoader;
 import com.internship.importer.infrastructure.loader.DataLoader;
 import com.internship.importer.repository.StagingRepository;
 import com.internship.importer.repository.StagingTableService;
