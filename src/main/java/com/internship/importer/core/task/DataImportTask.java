@@ -1,6 +1,7 @@
 package com.internship.importer.core.task;
 
-import com.internship.importer.repository.StagingDataLoader;
+import com.internship.importer.infrastructure.loader.CopyDataLoader;
+import com.internship.importer.infrastructure.loader.DataLoader;
 import com.internship.importer.repository.StagingTableService;
 import com.internship.importer.exception.DataFetchException;
 import com.internship.importer.infrastructure.fetcher.DataFetcher;
@@ -23,11 +24,11 @@ public class DataImportTask implements Task {
     private StagingTableService tableService;
     private String tableName;
     private DataFetcher dataFetcher;
-    private StagingDataLoader loader;
+    private DataLoader loader;
     private CompressionHandler compressionHandler;
 
     public DataImportTask(TaskStatusManager taskStatusManager, String jobName, StagingTableService tableService,
-            String tableName, DataFetcher dataFetcher, StagingDataLoader loader,
+            String tableName, DataFetcher dataFetcher, DataLoader loader,
             CompressionHandler compressionHandler) {
         this.taskStatusManager = taskStatusManager;
         this.jobName = jobName;

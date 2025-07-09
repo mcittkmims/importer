@@ -1,8 +1,9 @@
-package com.internship.importer.repository;
+package com.internship.importer.infrastructure.loader;
 
 import com.internship.importer.exception.DataCopyException;
 import com.internship.importer.exception.JsonParsingException;
 import com.internship.importer.infrastructure.format.StreamConverter;
+import com.internship.importer.repository.StagingTableService;
 import lombok.AllArgsConstructor;
 import org.postgresql.PGConnection;
 
@@ -14,11 +15,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 @AllArgsConstructor
-public class StagingDataLoader {
+public class CopyDataLoader implements DataLoader {
 
     private final DataSource dataSource;
     private StreamConverter converter;
 
+    @Override
     public void loadData(InputStream inputStream, String tableName) {
         try (Connection connection = dataSource.getConnection()) {
             PipedInputStream in = new PipedInputStream();

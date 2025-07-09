@@ -1,7 +1,10 @@
 package com.internship.importer.core.task;
 
 import com.internship.importer.infrastructure.format.StreamConverterFactory;
-import com.internship.importer.repository.StagingDataLoader;
+import com.internship.importer.infrastructure.loader.BatchInsertDataLoader;
+import com.internship.importer.infrastructure.loader.CopyDataLoader;
+import com.internship.importer.infrastructure.loader.DataLoader;
+import com.internship.importer.repository.StagingRepository;
 import com.internship.importer.repository.StagingTableService;
 import com.internship.importer.repository.PartitionRepository;
 import com.internship.importer.infrastructure.fetcher.DataFetcher;
@@ -45,10 +48,9 @@ public class TaskFactory {
                         javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
-                StagingDataLoader dataLoader = new StagingDataLoader(dataSource,
-                                streamConverterFactory.getConverter(config.getDataType()));
                 StagingTableService tableService = new StagingTableService(jdbcTemplate, config.getTable());
-
+                DataLoader dataLoader = new BatchInsertDataLoader(new StagingRepository(jdbcTemplate, config.getTable()),
+                        streamConverterFactory.getConverter(config.getDataType()));
                 CompressionHandler handler = compressionHandlerFactory.getFromString(config.getArchived());
                 DataFetcher dataFetcher = dataFetcherFactory.createDataFetcher(config.getSource());
 

@@ -11,6 +11,7 @@ import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.io.*;
 import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,18 +22,79 @@ public class XmlToNdjsonConverter implements StreamConverter {
     @Override
     public void convertInputStream(InputStream inputStream, Writer writer) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "windows-1251"))) {
-
             ObjectMapper jsonMapper = new ObjectMapper();
             XMLInputFactory factory = XMLInputFactory.newInstance();
 
-            log.info("XML conversion started...");
-
+            log.info("XML conversion (writer) started...");
 
             String outerTag = findOuterTag(reader);
-            processLines(reader, writer, jsonMapper, factory, outerTag);
+            processLinesToWriter(reader, writer, jsonMapper, factory, outerTag);
+
         } catch (IOException e) {
             throw new XmlParsingException("Failed to read input stream", e);
         }
+    }
+
+    public void convertInputStream(InputStream inputStream, BlockingQueue<String> queue) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "windows-1251"))) {
+            ObjectMapper jsonMapper = new ObjectMapper();
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+
+            log.info("XML conversion (queue) started...");
+
+            String outerTag = findOuterTag(reader);
+            processLinesToQueue(reader, queue, jsonMapper, factory, outerTag);
+
+        } catch (IOException | InterruptedException e) {
+            throw new XmlParsingException("Failed to convert XML stream to NDJSON queue", e);
+        }
+    }
+
+    private void processLinesToWriter(BufferedReader reader, Writer writer, ObjectMapper mapper,
+                                      XMLInputFactory factory, String outerTag) throws IOException {
+        String line;
+        long lineCount = 0;
+        while ((line = reader.readLine()) != null) {
+            lineCount++;
+            if (lineCount == 10000) break;
+
+            if (!line.contains(outerTag)) continue;
+
+            try {
+                ObjectNode node = convertLineToJson(line, outerTag, factory, mapper);
+                if (node != null) {
+                    writer.write(mapper.writeValueAsString(node));
+                    writer.write('\n');
+                }
+            } catch (Exception ignored) {}
+        }
+        writer.flush();
+    }
+
+    private void processLinesToQueue(BufferedReader reader, BlockingQueue<String> queue, ObjectMapper mapper,
+                                     XMLInputFactory factory, String outerTag) throws IOException, InterruptedException {
+        String line;
+        long lineCount = 0;
+        while ((line = reader.readLine()) != null) {
+            lineCount++;
+            if (lineCount == 10000) break;
+
+            if (!line.contains(outerTag)) continue;
+
+            try {
+                ObjectNode node = convertLineToJson(line, outerTag, factory, mapper);
+                if (node != null) {
+                    String jsonLine = mapper.writeValueAsString(node);
+                    queue.put(jsonLine);  // blocking put
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private ObjectNode convertLineToJson(String line, String outerTag,
+                                         XMLInputFactory factory, ObjectMapper mapper) throws Exception {
+        String unescapedLine = StringEscapeUtils.unescapeXml(line);
+        return parseSubjectLineWithStAX(unescapedLine, factory, mapper, outerTag);
     }
 
     private ObjectNode parseSubjectLineWithStAX(String line, XMLInputFactory factory, ObjectMapper mapper,
@@ -123,7 +185,6 @@ public class XmlToNdjsonConverter implements StreamConverter {
         return null;
     }
 
-
     public static boolean isDataStartTag(String line) {
         line = line.trim();
 
@@ -142,32 +203,5 @@ public class XmlToNdjsonConverter implements StreamConverter {
             }
         }
         throw new XmlParsingException("Outer tag not found");
-    }
-
-    private void processLines(BufferedReader reader, Writer writer, ObjectMapper mapper,
-                              XMLInputFactory factory, String outerTag) throws IOException {
-        String line;
-        long lineCount = 0;
-        while ((line = reader.readLine()) != null) {
-            lineCount++;
-            if (lineCount == 10000) break;
-
-            if (!line.contains(outerTag)) continue;
-
-            try {
-                ObjectNode node = convertLineToJson(line, outerTag, factory, mapper);
-                if (node != null) {
-                    writer.write(mapper.writeValueAsString(node));
-                    writer.write('\n');
-                }
-            } catch (Exception ignored) {}
-        }
-        writer.flush();
-    }
-
-    private ObjectNode convertLineToJson(String line, String outerTag,
-                                         XMLInputFactory factory, ObjectMapper mapper) throws Exception {
-        String unescapedLine = StringEscapeUtils.unescapeXml(line);
-        return parseSubjectLineWithStAX(unescapedLine, factory, mapper, outerTag);
     }
 }

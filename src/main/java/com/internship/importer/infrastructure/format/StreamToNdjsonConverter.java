@@ -12,10 +12,11 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
+import java.util.concurrent.BlockingQueue;
 
 @Component
 @Slf4j
-public class StreamToNdjsonConverter implements StreamConverter{
+public class StreamToNdjsonConverter implements StreamConverter {
 
     public void convertInputStream(InputStream inputStream, Writer writer) {
         try {
@@ -29,11 +30,11 @@ public class StreamToNdjsonConverter implements StreamConverter{
 
             switch (token) {
                 case START_ARRAY:
-                    writeArrayAsNdjson(parser, mapper, writer);
+                    writeArrayAsNdjsonToWriter(parser, mapper, writer);
                     break;
 
                 case START_OBJECT:
-                    writeNdjsonStream(parser, mapper, writer);
+                    writeNdjsonStreamToWriter(parser, mapper, writer);
                     break;
 
                 default:
@@ -46,12 +47,13 @@ public class StreamToNdjsonConverter implements StreamConverter{
         }
     }
 
-    private void writeArrayAsNdjson(JsonParser parser, ObjectMapper mapper, Writer writer) {
+    private void writeArrayAsNdjsonToWriter(JsonParser parser, ObjectMapper mapper, Writer writer) {
         try {
             while (parser.nextToken() == JsonToken.START_OBJECT) {
                 JsonNode node = mapper.readTree(parser);
-
-                String jsonLine = mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\");
+                String jsonLine = mapper.writeValueAsString(node)
+                        .replace("＼", "\\uFF3C")
+                        .replace("\\", "\\\\");
                 writer.write(jsonLine);
                 writer.write('\n');
             }
@@ -60,20 +62,71 @@ public class StreamToNdjsonConverter implements StreamConverter{
         }
     }
 
-    private void writeNdjsonStream(JsonParser parser, ObjectMapper mapper, Writer writer) {
+    private void writeNdjsonStreamToWriter(JsonParser parser, ObjectMapper mapper, Writer writer) {
         try {
             JsonNode node = mapper.readTree(parser);
-
-            writer.write(mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\"));
+            writer.write(mapper.writeValueAsString(node)
+                    .replace("＼", "\\uFF3C")
+                    .replace("\\", "\\\\"));
             writer.write('\n');
 
             while (parser.nextToken() == JsonToken.START_OBJECT) {
                 node = mapper.readTree(parser);
-                writer.write(mapper.writeValueAsString(node).replace("＼", "\\uFF3C").replace("\\", "\\\\"));
+                writer.write(mapper.writeValueAsString(node)
+                        .replace("＼", "\\uFF3C")
+                        .replace("\\", "\\\\"));
                 writer.write('\n');
             }
         } catch (IOException e) {
             throw new JsonParsingException("Failed to write NDJSON stream", e);
+        }
+    }
+
+    public void convertInputStream(InputStream inputStream, BlockingQueue<String> queue) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonFactory factory = mapper.getFactory();
+            JsonParser parser = factory.createParser(inputStream);
+
+            log.info("JSON stream queue converter started...");
+
+            JsonToken token = parser.nextToken();
+
+            switch (token) {
+                case START_ARRAY:
+                    writeArrayAsNdjsonToQueue(parser, mapper, queue);
+                    break;
+
+                case START_OBJECT:
+                    writeNdjsonStreamToQueue(parser, mapper, queue);
+                    break;
+
+                default:
+                    throw new JsonParsingException("Unsupported JSON format: expected array or NDJSON, found: " + token);
+            }
+
+        } catch (IOException | InterruptedException e) {
+            throw new JsonParsingException("Failed to parse JSON data to queue", e);
+        }
+    }
+
+
+
+    private void writeArrayAsNdjsonToQueue(JsonParser parser, ObjectMapper mapper, BlockingQueue<String> queue) throws IOException, InterruptedException {
+        while (parser.nextToken() == JsonToken.START_OBJECT) {
+            JsonNode node = mapper.readTree(parser);
+            String jsonLine = mapper.writeValueAsString(node);
+            queue.put(jsonLine);  // blocks if full
+        }
+    }
+
+    private void writeNdjsonStreamToQueue(JsonParser parser, ObjectMapper mapper, BlockingQueue<String> queue) throws IOException, InterruptedException {
+        JsonNode node = mapper.readTree(parser);
+        queue.put(mapper.writeValueAsString(node));
+
+        while (parser.nextToken() == JsonToken.START_OBJECT) {
+            node = mapper.readTree(parser);
+            queue.put(mapper.writeValueAsString(node));
         }
     }
 }
