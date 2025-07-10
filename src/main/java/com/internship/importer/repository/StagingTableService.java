@@ -44,7 +44,4 @@ public class StagingTableService {
         return tableName.matches("[a-zA-Z_][a-zA-Z0-9_]*");
     }
 
-    public DataSource getDataSource() {
-        return jdbcTemplate.getDataSource();
-    }
 }

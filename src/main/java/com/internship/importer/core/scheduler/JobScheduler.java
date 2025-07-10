@@ -10,7 +10,7 @@ import java.time.Instant;
 
 @Component
 @AllArgsConstructor
-@Slf4j // from lombok
+@Slf4j
 public class JobScheduler {
     private final JobRunner jobRunner;
 

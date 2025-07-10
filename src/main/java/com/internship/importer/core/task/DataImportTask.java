@@ -1,6 +1,5 @@
 package com.internship.importer.core.task;
 
-import com.internship.importer.infrastructure.loader.CopyDataLoader;
 import com.internship.importer.infrastructure.loader.DataLoader;
 import com.internship.importer.repository.StagingTableService;
 import com.internship.importer.exception.DataFetchException;
