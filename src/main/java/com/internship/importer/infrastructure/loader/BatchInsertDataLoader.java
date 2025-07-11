@@ -28,7 +28,7 @@ public class BatchInsertDataLoader implements DataLoader {
     public static int QUEUE_SIZE = 500;
     public static int ID_QUEUE_SIZE = 2000;
     private static final int BATCH_SIZE = 250;
-    private static final int ID_BATCH_SIZE = 500;
+    private static final int ID_BATCH_SIZE = 250;
     private static final int PARTITION_BATCH_SIZE = 10;
     private static final String POISON_PILL = "__EOF__";
     private static final Long ID_POISON_PILL = -1L;

@@ -15,6 +15,7 @@ import com.internship.importer.infrastructure.compression.CompressionHandler;
 import com.internship.importer.infrastructure.compression.CompressionHandlerFactory;
 import com.internship.importer.domain.JobConfig;
 import com.internship.importer.infrastructure.export.DataExporter;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -60,9 +61,9 @@ public class TaskFactory {
         }
 
         public DataExportTask createExportTask(
-                        String jobName,
-                        JobConfig config,
-                        javax.sql.DataSource dataSource) {
+                String jobName,
+                JobConfig config,
+                javax.sql.DataSource dataSource) {
                 JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
                 StagingTableService tableService = new StagingTableService(jdbcTemplate, config.getTable());

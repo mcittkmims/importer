@@ -33,7 +33,7 @@ public class StagingTableService {
                 "            id BIGSERIAL PRIMARY KEY,\n" +
                 "            start_id INT,\n" +
                 "            end_id INT,\n" +
-                "            status BOOLEAN,\n" +
+                "            status BOOLEAN DEFAULT false,\n" +
                 "            processing_status VARCHAR(20) DEFAULT 'PENDING'\n" +
                 "    );";
 

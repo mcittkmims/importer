@@ -63,7 +63,7 @@ public class DataImportTask implements Task {
             log.info("Task {} from job {} completed already! Skipping... ", taskName, jobName);
             return;
         }
-        tableService.createStagingTable();;
+        tableService.createStagingTable();
         try (InputStream inputStream = dataFetcher.fetchData()) {
             compressionHandler.handle(inputStream, inputStream1 -> loader.loadData(inputStream1, tableName));
         } catch (IOException e) {

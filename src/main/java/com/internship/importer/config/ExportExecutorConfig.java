@@ -10,6 +10,6 @@ import java.util.concurrent.Executors;
 public class ExportExecutorConfig {
     @Bean(name = "exportExecutorService", destroyMethod = "shutdown")
     public ExecutorService exportExecutorService() {
-        return Executors.newFixedThreadPool(6);
+        return Executors.newFixedThreadPool(12);
     }
 }

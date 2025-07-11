@@ -8,6 +8,7 @@ import com.internship.importer.domain.JobConfig;
 import com.internship.importer.core.task.*;
 import com.internship.importer.repository.DatabaseDataSourceFactory;
 import lombok.AllArgsConstructor;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;

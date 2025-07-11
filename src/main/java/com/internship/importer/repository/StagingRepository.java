@@ -55,7 +55,7 @@ public class StagingRepository {
     }
 
     public void insertPartitionBatches(List<PartitionBatch> batches) {
-        String sql = "INSERT INTO company_partition (start_id, end_id, status) VALUES (?, ?, false)";
+        String sql = "INSERT INTO company_partition (start_id, end_id) VALUES (?, ?)";
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
@@ -82,39 +82,23 @@ public class StagingRepository {
         );
     }
 
-    public PartitionBatch findFirstUnexportedPartition() {
-        String sql = "SELECT start_id, end_id FROM company_partition WHERE status = false ORDER BY start_id LIMIT 1";
-        return jdbcTemplate.query(sql, rs -> {
-            if (rs.next()) {
-                return new PartitionBatch(rs.getInt("start_id"), rs.getInt("end_id"));
-            }
-            return null;
-        });
-    }
-
-    public void updatePartitionStatus(long startId, long endId, boolean status) {
-        String sql = "UPDATE company_partition SET status = ? WHERE start_id = ? AND end_id = ?";
-        jdbcTemplate.update(sql, status, startId, endId);
-    }
-
-    public PartitionBatch fetchAndMarkNextPartition() {
+    public List<PartitionBatch> fetchAndMarkNextPartition(int limit) {
         String sql = "UPDATE company_partition " +
                 "SET processing_status = 'PROCESSING' " +
-                "WHERE id = (" +
+                "WHERE id IN (" +
                 "  SELECT id FROM company_partition " +
                 "  WHERE processing_status = 'PENDING' " +
-                "  ORDER BY start_id " +
-                "  LIMIT 1 " +
-                "  FOR UPDATE SKIP LOCKED" +
+                "  AND status = false " +
+                "  ORDER BY id " +
+                "  LIMIT ? " +
+                "  FOR UPDATE SKIP LOCKED " +
                 ") " +
                 "RETURNING start_id, end_id";
 
-        return jdbcTemplate.query(sql, rs -> {
-            if (rs.next()) {
-                return new PartitionBatch(rs.getInt("start_id"), rs.getInt("end_id"));
-            }
-            return null;
-        });
+        return jdbcTemplate.query(sql, new Object[]{limit}, (rs, rowNUm) -> new PartitionBatch(
+                rs.getInt("start_id"),
+                rs.getInt("end_id")
+        ));
     }
 
     public void updatePartitionProcessingStatus(long startId, long endId, ProcessingStatus status, boolean exported) {

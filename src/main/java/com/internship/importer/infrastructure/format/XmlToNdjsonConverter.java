@@ -55,8 +55,8 @@ public class XmlToNdjsonConverter implements StreamConverter {
         String line;
         long lineCount = 0;
         while ((line = reader.readLine()) != null) {
-            lineCount++;
-            if (lineCount == 10000) break;
+//            lineCount++;
+//            if (lineCount == 10000) break;
 
             if (!line.contains(outerTag)) continue;
 
@@ -76,8 +76,8 @@ public class XmlToNdjsonConverter implements StreamConverter {
         String line;
         long lineCount = 0;
         while ((line = reader.readLine()) != null) {
-            lineCount++;
-            if (lineCount == 10000) break;
+//            lineCount++;
+//            if (lineCount == 10000) break;
 
             if (!line.contains(outerTag)) continue;
 
