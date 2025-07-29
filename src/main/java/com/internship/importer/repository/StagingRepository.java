@@ -5,6 +5,7 @@ import com.internship.importer.domain.PartitionBatch;
 
 import com.internship.importer.domain.ProcessingStatus;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 @AllArgsConstructor
+@Slf4j
 public class StagingRepository {
     private final JdbcTemplate jdbcTemplate;
     private final String tableName;
@@ -99,6 +101,15 @@ public class StagingRepository {
                 rs.getInt("start_id"),
                 rs.getInt("end_id")
         ));
+    }
+
+    public void resetStuckPartitions() {
+        String sql = "UPDATE company_partition " +
+                "SET processing_status = 'PENDING' " +
+                "WHERE processing_status = 'PROCESSING' AND status = false";
+
+        int updated = jdbcTemplate.update(sql);
+        log.warn("Reset {} stuck partitions from PROCESSING to PENDING", updated);
     }
 
     public void updatePartitionProcessingStatus(long startId, long endId, ProcessingStatus status, boolean exported) {

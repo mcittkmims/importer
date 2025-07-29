@@ -6,11 +6,7 @@ import com.internship.importer.domain.ProcessingStatus;
 import com.internship.importer.exception.DataExportException;
 import com.internship.importer.repository.StagingRepository;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.IOException;
@@ -36,6 +32,7 @@ public class HttpDataExporter implements DataExporter {
         try {
             StagingRepository repository = new StagingRepository(jdbcTemplate, table);
 
+            repository.resetStuckPartitions();
             while (true) {
                 List<PartitionBatch> partitions = repository.fetchAndMarkNextPartition(100);
                 if (partitions.isEmpty()) {

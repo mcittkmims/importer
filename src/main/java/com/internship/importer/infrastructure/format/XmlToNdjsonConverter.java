@@ -85,7 +85,7 @@ public class XmlToNdjsonConverter implements StreamConverter {
                 ObjectNode node = convertLineToJson(line, outerTag, factory, mapper);
                 if (node != null) {
                     String jsonLine = mapper.writeValueAsString(node);
-                    queue.put(jsonLine);  // blocking put
+                    queue.put(jsonLine);
                 }
             } catch (Exception ignored) {}
         }

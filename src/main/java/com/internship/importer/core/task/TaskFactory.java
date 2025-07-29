@@ -1,7 +1,5 @@
 package com.internship.importer.core.task;
 
-import com.internship.importer.domain.JsonDataRecord;
-import com.internship.importer.domain.PartitionBatch;
 import com.internship.importer.infrastructure.export.HttpDataExporter;
 import com.internship.importer.infrastructure.format.StreamConverterFactory;
 import com.internship.importer.infrastructure.loader.BatchInsertDataLoader;
@@ -15,12 +13,10 @@ import com.internship.importer.infrastructure.compression.CompressionHandler;
 import com.internship.importer.infrastructure.compression.CompressionHandlerFactory;
 import com.internship.importer.domain.JobConfig;
 import com.internship.importer.infrastructure.export.DataExporter;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 @Component

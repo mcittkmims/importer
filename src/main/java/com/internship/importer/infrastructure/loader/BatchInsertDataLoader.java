@@ -70,7 +70,7 @@ public class BatchInsertDataLoader implements DataLoader {
             try {
                 List<JsonData> batch = new ArrayList<>();
                 while (true) {
-                    String item = jsonQueue.take(); // blocking
+                    String item = jsonQueue.take();
 
                     if (POISON_PILL.equals(item)) {
                         break;
